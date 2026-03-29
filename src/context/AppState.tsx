@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { AppData, PizzaPlanRow } from "../types";
+import { AppData, PizzaPlanRow, PartyPlan } from "../types";
 import { initialAppData, makeId } from "../seeds";
 import { storageAdapter } from "../storage/storage";
 
@@ -9,6 +9,7 @@ interface AppStateValue {
   addPlanRow(): void;
   updatePlanRow(rowId: string, updates: Partial<PizzaPlanRow>): void;
   removePlanRow(rowId: string): void;
+  updateActiveParty(updates: Partial<PartyPlan>): void;
   saveNow(): Promise<void>;
 }
 
@@ -40,7 +41,9 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       ...current,
       activeParty: {
         ...current.activeParty,
-        rows: current.activeParty.rows.map((row) => (row.id === rowId ? { ...row, ...updates } : row)),
+        rows: current.activeParty.rows.map((row) =>
+          row.id === rowId ? { ...row, ...updates } : row
+        ),
       },
     }));
   } // end of updatePlanRow()
@@ -55,16 +58,38 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     }));
   } // end of removePlanRow()
 
+  function updateActiveParty(updates: Partial<PartyPlan>) {
+    setData((current) => ({
+      ...current,
+      activeParty: {
+        ...current.activeParty,
+        ...updates,
+      },
+    }));
+  } // end of updateActiveParty()
+
   async function saveNow() {
     await storageAdapter.save(data);
   } // end of saveNow()
 
   const value = useMemo(
-    () => ({ data, setData, addPlanRow, updatePlanRow, removePlanRow, saveNow }),
-    [data],
+    () => ({
+      data,
+      setData,
+      addPlanRow,
+      updatePlanRow,
+      removePlanRow,
+      updateActiveParty,
+      saveNow,
+    }),
+    [data]
   );
 
-  return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;
+  return (
+    <AppStateContext.Provider value={value}>
+      {children}
+    </AppStateContext.Provider>
+  );
 } // end of AppStateProvider()
 
 export function useAppState() {
@@ -74,4 +99,3 @@ export function useAppState() {
   }
   return ctx;
 } // end of useAppState()
-// end of AppState.tsx
