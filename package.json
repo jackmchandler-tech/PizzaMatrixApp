@@ -1,9 +1,3 @@
-// =========================
-// COMPLETE MINIMUM VITE PROJECT FILES
-// Add these to your repo
-// =========================
-
-// ---------- package.json ----------
 {
   "name": "pizza-matrix-app",
   "private": true,
