@@ -1,4 +1,3 @@
-// ---------- vercel.json (IMPORTANT) ----------
 {
   "rewrites": [
     { "source": "/(.*)", "destination": "/" }
