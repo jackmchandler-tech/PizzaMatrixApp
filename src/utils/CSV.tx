@@ -1,0 +1,28 @@
+export function toCsv(rows: Record<string, unknown>[]): string {
+  if (!rows.length) return "";
+  const headers = Object.keys(rows[0]);
+  const escape = (value: unknown) => {
+    const text = value === null || value === undefined ? "" : String(value);
+    if (text.includes(",") || text.includes("\n") || text.includes('"')) {
+      return `"${text.replaceAll('"', '""')}"`;
+    }
+    return text;
+  };
+
+  const lines = [headers.join(",")];
+  rows.forEach((row) => {
+    lines.push(headers.map((header) => escape(row[header])).join(","));
+  });
+  return lines.join("\n");
+} // end of toCsv()
+
+export function downloadTextFile(filename: string, content: string, mimeType = "text/plain;charset=utf-8") {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+} // end of downloadTextFile()
+// end of csv.ts
