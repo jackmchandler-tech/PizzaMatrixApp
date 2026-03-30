@@ -67,4 +67,4 @@ import React from "react";
       </section>
     </div>
   );
-} // end of PrintView()
+};
