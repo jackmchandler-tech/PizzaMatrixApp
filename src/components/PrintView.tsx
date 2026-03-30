@@ -79,7 +79,7 @@ export function PrintView({ data }: { data: AppData }) {
           </thead>
 
           <tbody>
-            ,index{ingredientRows.map((row,index) => (
+            {ingredientRows.map((row,index) => (
               <tr key={row.key} className={index % 2 === 0 ? "bg-white" : "bg-slate-50"}>
                 <td className="border p-2">{row.itemName}</td>
                 <td className="border p-2">
