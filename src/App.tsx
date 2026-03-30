@@ -1,4 +1,3 @@
-import React, { useMemo, useState } from "react";
 import { AppStateProvider, useAppState } from "./context/AppState";
 import { buildCoverageSummary, summarizePlanRow } from "./utils/calculations";
 import { PrintView } from "./components/PrintView";
