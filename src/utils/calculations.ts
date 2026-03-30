@@ -1,7 +1,4 @@
 import {
-      task: "Make dough",
-      amountText: formatAmount(totalDough, "oz"),
-      done: false,
     });
   });
 
@@ -9,9 +6,12 @@ import {
     if (a.pizzaName !== b.pizzaName) return a.pizzaName.localeCompare(b.pizzaName);
     return a.task.localeCompare(b.task);
   });
-} // end of buildMiseEnPlaceList()
+}
 
-export function summarizePlanRow(data: AppData, row: PizzaPlanRow): {
+export function summarizePlanRow(
+  data: AppData,
+  row: PizzaPlanRow,
+): {
   pizzaName: string;
   sizeName: string;
   sauce: string;
@@ -37,32 +37,44 @@ export function summarizePlanRow(data: AppData, row: PizzaPlanRow): {
     };
   }
 
-  const getName = (category: LibraryItem["category"], itemId?: string) => {
+  const getName = (category: LibraryCategory, itemId?: string): string => {
     if (!itemId) return "";
     return getLibraryCollection(data, category).find((item) => item.id === itemId)?.name ?? "";
   };
 
-  const toppings = pizza.toppingLines.map((line) => getName("toppings", line.itemId)).filter(Boolean).join(", ");
-  const seasonings = pizza.seasoningLines.map((line) => getName("seasonings", line.itemId)).filter(Boolean).join(", ");
-  const cheeseNames = [
+  const toppings = pizza.toppingLines
+    .map((line) => getName("toppings", line.itemId))
+    .filter(Boolean)
+    .join(", ");
+
+  const seasonings = pizza.seasoningLines
+    .map((line) => getName("seasonings", line.itemId))
+    .filter(Boolean)
+    .join(", ");
+
+  const cheese = [
     getName("cheeses", pizza.primaryCheeseLine.itemId),
     ...pizza.secondaryCheeseLines.map((line) => getName("cheeses", line.itemId)),
-  ].filter(Boolean).join(", ");
-  const postBakeNames = [
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  const postBake = [
     ...pizza.postBakeCheeseLines.map((line) => getName("cheeses", line.itemId)),
     ...pizza.postBakeToppingLines.map((line) => getName("toppings", line.itemId)),
     ...pizza.postBakeSeasoningLines.map((line) => getName("seasonings", line.itemId)),
-  ].filter(Boolean).join(", ");
+  ]
+    .filter(Boolean)
+    .join(", ");
 
   return {
     pizzaName: pizza.name,
     sizeName: size.name,
     sauce: pizza.sauceLine ? getName("sauces", pizza.sauceLine.itemId) : "",
-    cheese: cheeseNames,
+    cheese,
     toppings,
     seasonings,
-    postBake: postBakeNames,
+    postBake,
     servings: resolveServingsForSize(pizza, size.id, data.sizes) * row.quantity,
   };
-} // end of summarizePlanRow()
-// end of calculations.ts
+}
