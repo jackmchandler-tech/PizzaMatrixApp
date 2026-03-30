@@ -11,72 +11,74 @@ const styles = {
   page: {
     backgroundColor: "#ffffff",
     color: "#000000",
-    padding: "24px",
+    padding: "18px",
     fontFamily: "Arial, Helvetica, sans-serif",
   } as const,
   section: {
-    marginBottom: "32px",
+    marginBottom: "24px",
     breakInside: "avoid",
   } as const,
   title: {
-    fontSize: "28px",
+    fontSize: "24px",
     fontWeight: 700,
-    marginBottom: "12px",
+    marginBottom: "10px",
   } as const,
   subtitle: {
-    fontSize: "22px",
+    fontSize: "19px",
     fontWeight: 700,
-    marginBottom: "12px",
+    marginBottom: "10px",
   } as const,
   summaryGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-    gap: "12px",
-    marginBottom: "16px",
+    gap: "8px",
+    marginBottom: "12px",
   } as const,
   summaryCard: {
     border: "1px solid #94a3b8",
     backgroundColor: "#f8fafc",
-    padding: "12px 14px",
+    padding: "8px 10px",
   } as const,
   summaryCardWarn: {
     border: "1px solid #fca5a5",
     backgroundColor: "#fef2f2",
-    padding: "12px 14px",
+    padding: "8px 10px",
   } as const,
   summaryCardOk: {
     border: "1px solid #86efac",
     backgroundColor: "#f0fdf4",
-    padding: "12px 14px",
+    padding: "8px 10px",
   } as const,
   summaryLabel: {
-    fontSize: "13px",
+    fontSize: "12px",
     color: "#475569",
-    marginBottom: "4px",
+    marginBottom: "2px",
   } as const,
   summaryValue: {
-    fontSize: "20px",
+    fontSize: "17px",
     fontWeight: 700,
   } as const,
   table: {
     width: "100%",
     borderCollapse: "collapse",
     tableLayout: "fixed",
-    fontSize: "14px",
+    fontSize: "13px",
   } as const,
   th: {
     border: "1px solid #94a3b8",
     backgroundColor: "#e2e8f0",
-    padding: "10px 12px",
+    padding: "6px 8px",
     textAlign: "left" as const,
     verticalAlign: "top" as const,
+    lineHeight: 1.2,
   } as const,
   td: {
     border: "1px solid #94a3b8",
-    padding: "10px 12px",
+    padding: "6px 8px",
     verticalAlign: "top" as const,
     wordWrap: "break-word" as const,
     overflowWrap: "break-word" as const,
+    lineHeight: 1.25,
   } as const,
   rowEven: {
     backgroundColor: "#ffffff",
@@ -85,7 +87,6 @@ const styles = {
     backgroundColor: "#f8fafc",
   } as const,
 };
-
 export function PrintView({ data }: { data: AppData }) {
   const summary = buildCoverageSummary(data);
   const ingredientRows = buildIngredientPullList(data);
@@ -190,7 +191,7 @@ export function PrintView({ data }: { data: AppData }) {
               <th style={{ ...styles.th, width: "14%" }}>Amt</th>
               <th style={{ ...styles.th, width: "18%" }}>Location</th>
               <th style={{ ...styles.th, width: "36%" }}>Used For</th>
-              <th style={{ ...styles.th, width: "8%" }}>☐</th>
+              <th style={{ ...styles.th, width: "5%" }}>Done</th>
             </tr>
           </thead>
 
@@ -221,7 +222,7 @@ export function PrintView({ data }: { data: AppData }) {
               <th style={{ ...styles.th, width: "24%" }}>Item</th>
               <th style={{ ...styles.th, width: "16%" }}>Amount</th>
               <th style={{ ...styles.th, width: "22%" }}>Pizza</th>
-              <th style={{ ...styles.th, width: "6%" }}>☐</th>
+              <th style={{ ...styles.th, width: "5%" }}>Done</th>
             </tr>
           </thead>
 
