@@ -43,7 +43,7 @@ export function PrintView({ data }: { data: AppData }) {
               const summaryRow = summarizePlanRow(data, row);
 
               return (
-                <tr key={row.key} className={index % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                <tr key={row.id} className={index % 2 === 0 ? "bg-white" : "bg-slate-50"}>
                   <td className="border p-2">{row.quantity}</td>
                   <td className="border p-2">{summaryRow.pizzaName}</td>
                   <td className="border p-2">{summaryRow.sizeName}</td>
@@ -111,7 +111,7 @@ export function PrintView({ data }: { data: AppData }) {
 
           <tbody>
             {miseRows.map((row,index) => (
-              <tr key={row.key} className={index % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+              <tr key={row.id} className={index % 2 === 0 ? "bg-white" : "bg-slate-50"}>
                 <td className="border p-2">{row.task}</td>
                 <td className="border p-2">{row.itemName ?? ""}</td>
                 <td className="border p-2">{row.amountText ?? ""}</td>
