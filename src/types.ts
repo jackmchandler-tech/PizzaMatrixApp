@@ -1,4 +1,66 @@
 export type Id = string;
+export type LibraryCategory = "sauces" | "cheeses" | "toppings" | "seasonings";
+export type ShapeType = "round" | "rectangle";
+export type UnitTypeKind = "mass" | "volume" | "count" | "length" | "text";
+
+export interface LocationRecord {
+  id: Id;
+  name: string;
+  sortOrder: number;
+  isBuiltIn?: boolean;
+}
+
+export interface UnitRecord {
+  id: Id;
+  name: string;
+  symbol: string;
+  kind: UnitTypeKind;
+  sortOrder: number;
+  isBuiltIn?: boolean;
+}
+
+export interface SizeRecord {
+  id: Id;
+  name: string;
+  shape: ShapeType;
+  diameterInches?: number;
+  lengthInches?: number;
+  widthInches?: number;
+  surfaceAreaSqIn: number;
+}
+
+export interface LibraryItem {
+  id: Id;
+  category: LibraryCategory;
+  name: string;
+  defaultLocationId?: Id;
+  defaultUnitId?: Id;
+  defaultMiseEnPlace?: string;
+  notes?: string;
+}
+
+export interface AmountBySize {
+  sizeId: Id;
+  value?: number;
+  unitId?: Id;
+  isDirect?: boolean;
+}
+
+export interface RecipeLine {
+  id: Id;
+  itemId: Id;
+  amountBySize: AmountBySize[];
+  pizzaSpecificMiseEnPlace?: string;
+  notes?: string;
+}
+
+export interface PizzaRecipe {
+  id: Id;
+  name: string;
+  description?: string;
+  sauceLine?: RecipeLine | null;
+  primaryCheeseLine: RecipeLine;
+  secondaryCheeseLines: RecipeLine[];
   toppingLines: RecipeLine[];
   seasoningLines: RecipeLine[];
   postBakeCheeseLines: RecipeLine[];
