@@ -39,11 +39,11 @@ export function PrintView({ data }: { data: AppData }) {
           </thead>
 
           <tbody>
-            {data.activeParty.rows.map((row) => {
+            {data.activeParty.rows.map((row,index) => {
               const summaryRow = summarizePlanRow(data, row);
 
               return (
-                <tr key={row.id}>
+                <tr key={row.key} className={index % 2 === 0 ? "bg-white" : "bg-slate-50"}>
                   <td className="border p-2">{row.quantity}</td>
                   <td className="border p-2">{summaryRow.pizzaName}</td>
                   <td className="border p-2">{summaryRow.sizeName}</td>
@@ -70,7 +70,7 @@ export function PrintView({ data }: { data: AppData }) {
           <thead>
             <tr>
               <th className="border p-2 text-left">Item</th>
-              <th className="border p-2 text-left">Total Amount</th>
+              <th className="border p-2 text-left">Amt</th>
               <th className="border p-2 text-left">Unit</th>
               <th className="border p-2 text-left">Location</th>
               <th className="border p-2 text-left">Used For</th>
@@ -79,8 +79,8 @@ export function PrintView({ data }: { data: AppData }) {
           </thead>
 
           <tbody>
-            {ingredientRows.map((row) => (
-              <tr key={row.key}>
+            ,index{ingredientRows.map((row,index) => (
+              <tr key={row.key} className={index % 2 === 0 ? "bg-white" : "bg-slate-50"}>
                 <td className="border p-2">{row.itemName}</td>
                 <td className="border p-2">
                   {row.totalValue !== undefined ? Math.round(row.totalValue * 100) / 100 : ""}
@@ -104,19 +104,17 @@ export function PrintView({ data }: { data: AppData }) {
               <th className="border p-2 text-left">Task</th>
               <th className="border p-2 text-left">Item</th>
               <th className="border p-2 text-left">Amount</th>
-              <th className="border p-2 text-left">Location</th>
               <th className="border p-2 text-left">Pizza</th>
               <th className="border p-2 text-left">Done</th>
             </tr>
           </thead>
 
           <tbody>
-            {miseRows.map((row) => (
-              <tr key={row.id}>
+            {miseRows.map((row,index) => (
+              <tr key={row.key} className={index % 2 === 0 ? "bg-white" : "bg-slate-50"}>
                 <td className="border p-2">{row.task}</td>
                 <td className="border p-2">{row.itemName ?? ""}</td>
                 <td className="border p-2">{row.amountText ?? ""}</td>
-                <td className="border p-2">{row.locationName ?? ""}</td>
                 <td className="border p-2">{row.pizzaName}</td>
                 <td className="border p-2">☐</td>
               </tr>
