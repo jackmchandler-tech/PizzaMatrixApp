@@ -1,4 +1,4 @@
-import {useState, useMemo} from "react";
+import { useMemo, useState } from "react";
 import { AppStateProvider, useAppState } from "./context/AppState";
 import { buildCoverageSummary, summarizePlanRow } from "./utils/calculations";
 import { PrintView } from "./components/PrintView";
@@ -13,16 +13,17 @@ function PlannerScreen() {
   } = useAppState();
 
   const [showPrintView, setShowPrintView] = useState(false);
-  const coverage = useMemo(() => buildCoverageSummary(data), [data]);
   const [qtyDrafts, setQtyDrafts] = useState<Record<string, string>>({});
+
+  const coverage = useMemo(() => buildCoverageSummary(data), [data]);
 
   function sanitizeQuantityInput(raw: string): number {
     const match = raw.match(/\d+/);
     if (!match) return 1;
-  
+
     const parsed = Number.parseInt(match[0], 10);
     if (!Number.isFinite(parsed) || parsed < 1) return 1;
-  
+
     return parsed;
   }
 
@@ -132,17 +133,17 @@ function PlannerScreen() {
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr>
-                  <th className="border px-2 py-1 text-left"">Qty</th>          
-                  <th className="border px-2 py-1 text-left"">Pizza</th>
-                  <th className="border px-2 py-1 text-left"">Size</th>
-                  <th className="border px-2 py-1 text-left"">Info</th>
-                  <th className="border px-2 py-1 text-left"">Sauce</th>
-                  <th className="border px-2 py-1 text-left"">Cheese</th>
-                  <th className="border px-2 py-1 text-left"">Toppings</th>
-                  <th className="border px-2 py-1 text-left"">Seasonings</th>
-                  <th className="border px-2 py-1 text-left"">Post-bake</th>
-                  <th className="border px-2 py-1 text-left"">Notes</th>
-                  <th className="border px-2 py-1 text-left"">Remove</th>
+                  <th className="border px-2 py-1 text-left">Qty</th>
+                  <th className="border px-2 py-1 text-left">Pizza</th>
+                  <th className="border px-2 py-1 text-left">Size</th>
+                  <th className="border px-2 py-1 text-left">Info</th>
+                  <th className="border px-2 py-1 text-left">Sauce</th>
+                  <th className="border px-2 py-1 text-left">Cheese</th>
+                  <th className="border px-2 py-1 text-left">Toppings</th>
+                  <th className="border px-2 py-1 text-left">Seasonings</th>
+                  <th className="border px-2 py-1 text-left">Post-bake</th>
+                  <th className="border px-2 py-1 text-left">Notes</th>
+                  <th className="border px-2 py-1 text-left">Remove</th>
                 </tr>
               </thead>
 
@@ -165,21 +166,24 @@ function PlannerScreen() {
                             }));
                           }}
                           onBlur={(e) => {
-                            const nextQuantity = sanitizeQuantityInput(e.target.value);
-                      
+                            const nextQuantity = sanitizeQuantityInput(
+                              e.target.value,
+                            );
+
                             updatePlanRow(row.id, {
                               quantity: nextQuantity,
                             });
-                      
+
                             setQtyDrafts((current) => {
                               const next = { ...current };
                               delete next[row.id];
                               return next;
                             });
                           }}
-                          className="w-12 rounded border px-1 py-1 text-center"
+                          className="w-10 rounded border px-1 py-1 text-center"
                         />
                       </td>
+
                       <td className="border px-2 py-1 align-top">
                         <select
                           value={row.pizzaId ?? ""}
@@ -188,7 +192,7 @@ function PlannerScreen() {
                               pizzaId: e.target.value || undefined,
                             })
                           }
-                          className="w-40 rounded border px-1 py-1"
+                          className="w-36 rounded border px-1 py-1"
                         >
                           <option value="">Select pizza</option>
                           {data.pizzas.map((pizzaOption) => (
@@ -207,7 +211,7 @@ function PlannerScreen() {
                               sizeId: e.target.value || undefined,
                             })
                           }
-                          className="w-40 rounded border px-1 py-1"
+                          className="w-24 rounded border px-1 py-1"
                         >
                           <option value="">Select size</option>
                           {data.sizes.map((size) => (
@@ -231,8 +235,12 @@ function PlannerScreen() {
                         ) : null}
                       </td>
 
-                      <td className="border px-2 py-1 align-top">{summary.sauce}</td>
-                      <td className="border px-2 py-1 align-top">{summary.cheese}</td>
+                      <td className="border px-2 py-1 align-top">
+                        {summary.sauce}
+                      </td>
+                      <td className="border px-2 py-1 align-top">
+                        {summary.cheese}
+                      </td>
                       <td className="border px-2 py-1 align-top">
                         {summary.toppings}
                       </td>
@@ -268,6 +276,7 @@ function PlannerScreen() {
               </tbody>
             </table>
           </div>
+
           <div className="mt-2">
             <button
               className="rounded bg-blue-700 px-3 py-1.5 text-white"
@@ -280,11 +289,11 @@ function PlannerScreen() {
       </div>
     </div>
   );
-} // end of PlannerScreen()
+}
 
 function AppInner() {
   return <PlannerScreen />;
-} // end of AppInner()
+}
 
 export default function App() {
   return (
@@ -292,4 +301,4 @@ export default function App() {
       <AppInner />
     </AppStateProvider>
   );
-} // end of App()
+}
