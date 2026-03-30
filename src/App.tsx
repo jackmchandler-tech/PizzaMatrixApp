@@ -160,7 +160,7 @@ function PlannerScreen() {
                   return (
                     <tr key={row.id}>
                       <td className="border p-2 align-top">
-                        <input>
+                        <input
                           type="text"
                           inputMode="numeric"
                           value={qtyDrafts[row.id] ?? String(row.quantity)}
@@ -185,7 +185,7 @@ function PlannerScreen() {
                           }}
                           className="w-12 rounded border px-1 py-1 text-center"
                         />
-                      </td
+                      </td>
                       <td className="border p-2 align-top">
                         <select
                           value={row.pizzaId ?? ""}
