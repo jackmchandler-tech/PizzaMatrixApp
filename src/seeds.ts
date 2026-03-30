@@ -5,6 +5,8 @@ import type {
   LibraryItem,
   LocationRecord,
   PizzaPlanRow,
+  PizzaRecipe,
+  RecipeLine,
   SizeRecord,
   UnitRecord,
 } from "./types";
@@ -72,6 +74,165 @@ function blankPlanRow(): PizzaPlanRow {
   };
 }
 
+function makeAmounts(
+  entries: Array<{ sizeId: string; value: number; unitId: string; isDirect?: boolean }>,
+) {
+  return entries.map((entry) => ({
+    sizeId: entry.sizeId,
+    value: entry.value,
+    unitId: entry.unitId,
+    isDirect: entry.isDirect ?? true,
+  }));
+}
+
+function makeRecipeLine(
+  itemId: string,
+  amountBySize: Array<{ sizeId: string; value: number; unitId: string; isDirect?: boolean }>,
+  pizzaSpecificMiseEnPlace?: string,
+  notes?: string,
+): RecipeLine {
+  return {
+    id: makeId("line"),
+    itemId,
+    amountBySize: makeAmounts(amountBySize),
+    pizzaSpecificMiseEnPlace,
+    notes,
+  };
+}
+
+const diavolaPizza: PizzaRecipe = {
+  id: "pizza_diavola",
+  name: "Diavola",
+  description: "Tomato sauce, mozzarella, pepperoni, green olives, and pizza shake.",
+  sauceLine: makeRecipeLine("sauce_pizza", [
+    { sizeId: "size_13_round", value: 5, unitId: "unit_fl_oz" },
+    { sizeId: "size_15_round", value: 6.5, unitId: "unit_fl_oz" },
+    { sizeId: "size_10x14_rect", value: 5.25, unitId: "unit_fl_oz" },
+  ]),
+  primaryCheeseLine: makeRecipeLine("cheese_mozz", [
+    { sizeId: "size_13_round", value: 7, unitId: "unit_oz" },
+    { sizeId: "size_15_round", value: 9, unitId: "unit_oz" },
+    { sizeId: "size_10x14_rect", value: 7.5, unitId: "unit_oz" },
+  ]),
+  secondaryCheeseLines: [],
+  toppingLines: [
+    makeRecipeLine("top_pepperoni", [
+      { sizeId: "size_13_round", value: 2, unitId: "unit_oz" },
+      { sizeId: "size_15_round", value: 2.75, unitId: "unit_oz" },
+      { sizeId: "size_10x14_rect", value: 2.25, unitId: "unit_oz" },
+    ]),
+    makeRecipeLine(
+      "top_green_olives",
+      [
+        { sizeId: "size_13_round", value: 8, unitId: "unit_each" },
+        { sizeId: "size_15_round", value: 10, unitId: "unit_each" },
+        { sizeId: "size_10x14_rect", value: 9, unitId: "unit_each" },
+      ],
+      "Crack olives in half",
+    ),
+  ],
+  seasoningLines: [
+    makeRecipeLine("season_pizza_shake", [
+      { sizeId: "size_13_round", value: 1, unitId: "unit_to_taste" },
+      { sizeId: "size_15_round", value: 1, unitId: "unit_to_taste" },
+      { sizeId: "size_10x14_rect", value: 1, unitId: "unit_to_taste" },
+    ]),
+  ],
+  postBakeCheeseLines: [],
+  postBakeToppingLines: [],
+  postBakeSeasoningLines: [],
+  servingsBySize: makeAmounts([
+    { sizeId: "size_13_round", value: 3, unitId: "unit_each" },
+    { sizeId: "size_15_round", value: 4, unitId: "unit_each" },
+    { sizeId: "size_10x14_rect", value: 3.5, unitId: "unit_each" },
+  ]),
+  doughWeightBySize: makeAmounts([
+    { sizeId: "size_13_round", value: 16, unitId: "unit_oz" },
+    { sizeId: "size_15_round", value: 20, unitId: "unit_oz" },
+    { sizeId: "size_10x14_rect", value: 18, unitId: "unit_oz" },
+  ]),
+  notes: "Sample seeded pizza for testing.",
+};
+
+const greekPizza: PizzaRecipe = {
+  id: "pizza_greek",
+  name: "Greek",
+  description:
+    "Lemon garlic yogurt, mozzarella, chicken roulade, olives, pizza shake, feta, and spinach.",
+  sauceLine: makeRecipeLine("sauce_yogurt", [
+    { sizeId: "size_13_round", value: 4, unitId: "unit_fl_oz" },
+    { sizeId: "size_15_round", value: 5.25, unitId: "unit_fl_oz" },
+    { sizeId: "size_10x14_rect", value: 4.5, unitId: "unit_fl_oz" },
+  ]),
+  primaryCheeseLine: makeRecipeLine("cheese_mozz", [
+    { sizeId: "size_13_round", value: 5, unitId: "unit_oz" },
+    { sizeId: "size_15_round", value: 6.5, unitId: "unit_oz" },
+    { sizeId: "size_10x14_rect", value: 5.5, unitId: "unit_oz" },
+  ]),
+  secondaryCheeseLines: [],
+  toppingLines: [
+    makeRecipeLine(
+      "top_chicken_roulade",
+      [
+        { sizeId: "size_13_round", value: 4, unitId: "unit_oz" },
+        { sizeId: "size_15_round", value: 5, unitId: "unit_oz" },
+        { sizeId: "size_10x14_rect", value: 4.5, unitId: "unit_oz" },
+      ],
+      'Slice into 1/4" disks',
+    ),
+    makeRecipeLine(
+      "top_green_olives",
+      [
+        { sizeId: "size_13_round", value: 12, unitId: "unit_each" },
+        { sizeId: "size_15_round", value: 15, unitId: "unit_each" },
+        { sizeId: "size_10x14_rect", value: 13, unitId: "unit_each" },
+      ],
+      "Chop olives",
+    ),
+  ],
+  seasoningLines: [
+    makeRecipeLine("season_pizza_shake", [
+      { sizeId: "size_13_round", value: 1, unitId: "unit_to_taste" },
+      { sizeId: "size_15_round", value: 1, unitId: "unit_to_taste" },
+      { sizeId: "size_10x14_rect", value: 1, unitId: "unit_to_taste" },
+    ]),
+  ],
+  postBakeCheeseLines: [
+    makeRecipeLine(
+      "cheese_feta",
+      [
+        { sizeId: "size_13_round", value: 3, unitId: "unit_oz" },
+        { sizeId: "size_15_round", value: 4, unitId: "unit_oz" },
+        { sizeId: "size_10x14_rect", value: 3.25, unitId: "unit_oz" },
+      ],
+      "Crumble",
+    ),
+  ],
+  postBakeToppingLines: [
+    makeRecipeLine(
+      "top_spinach",
+      [
+        { sizeId: "size_13_round", value: 1, unitId: "unit_oz" },
+        { sizeId: "size_15_round", value: 1.5, unitId: "unit_oz" },
+        { sizeId: "size_10x14_rect", value: 1.25, unitId: "unit_oz" },
+      ],
+      "Saute",
+    ),
+  ],
+  postBakeSeasoningLines: [],
+  servingsBySize: makeAmounts([
+    { sizeId: "size_13_round", value: 3, unitId: "unit_each" },
+    { sizeId: "size_15_round", value: 4, unitId: "unit_each" },
+    { sizeId: "size_10x14_rect", value: 3.5, unitId: "unit_each" },
+  ]),
+  doughWeightBySize: makeAmounts([
+    { sizeId: "size_13_round", value: 16, unitId: "unit_oz" },
+    { sizeId: "size_15_round", value: 20, unitId: "unit_oz" },
+    { sizeId: "size_10x14_rect", value: 18, unitId: "unit_oz" },
+  ]),
+  notes: "Sample seeded pizza for testing.",
+};
+
 export const initialAppData: AppData = {
   version: 1,
   locations: seededLocations,
@@ -94,7 +255,7 @@ export const initialAppData: AppData = {
   seasonings: [
     makeLibraryItem("season_pizza_shake", "seasonings", "Pizza shake", "loc_pantry", "unit_to_taste"),
   ],
-  pizzas: [],
+  pizzas: [diavolaPizza, greekPizza],
   activeParty: {
     id: makeId("party"),
     diners: 0,
