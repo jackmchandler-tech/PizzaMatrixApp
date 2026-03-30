@@ -160,19 +160,32 @@ function PlannerScreen() {
                   return (
                     <tr key={row.id}>
                       <td className="border p-2 align-top">
-                        <input
-                          type="number"
-                          min={1}
-                          value={row.quantity}
-                          onChange={(e) =>
+                        <input>
+                          type="text"
+                          inputMode="numeric"
+                          value={qtyDrafts[row.id] ?? String(row.quantity)}
+                          onChange={(e) => {
+                            setQtyDrafts((current) => ({
+                              ...current,
+                              [row.id]: e.target.value,
+                            }));
+                          }}
+                          onBlur={(e) => {
+                            const nextQuantity = sanitizeQuantityInput(e.target.value);
+                      
                             updatePlanRow(row.id, {
-                              quantity: Number(e.target.value) || 1,
-                            })
-                          }
-                          className="w-20 rounded border px-2 py-1"
+                              quantity: nextQuantity,
+                            });
+                      
+                            setQtyDrafts((current) => {
+                              const next = { ...current };
+                              delete next[row.id];
+                              return next;
+                            });
+                          }}
+                          className="w-12 rounded border px-1 py-1 text-center"
                         />
-                      </td>
-
+                      </td
                       <td className="border p-2 align-top">
                         <select
                           value={row.pizzaId ?? ""}
