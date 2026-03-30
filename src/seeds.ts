@@ -34,21 +34,21 @@ export const seededUnits: UnitRecord[] = [
 export const seededSizes: SizeRecord[] = [
   {
     id: "size_13_round",
-    name: '13" Round',
+    name: '13"',
     shape: "round",
     diameterInches: 13,
     surfaceAreaSqIn: Math.PI * Math.pow(13 / 2, 2),
   },
   {
     id: "size_15_round",
-    name: '15" Round',
+    name: '15"',
     shape: "round",
     diameterInches: 15,
     surfaceAreaSqIn: Math.PI * Math.pow(15 / 2, 2),
   },
   {
     id: "size_10x14_rect",
-    name: '10" x 14" Rectangle',
+    name: '10x14"',
     shape: "rectangle",
     lengthInches: 14,
     widthInches: 10,

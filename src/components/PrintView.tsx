@@ -6,119 +6,241 @@ import {
   summarizePlanRow,
 } from "../utils/calculations";
 
+const styles = {
+  page: {
+    backgroundColor: "#ffffff",
+    color: "#000000",
+    padding: "24px",
+    fontFamily: "Arial, Helvetica, sans-serif",
+  } as const,
+  section: {
+    marginBottom: "32px",
+    breakInside: "avoid",
+  } as const,
+  title: {
+    fontSize: "28px",
+    fontWeight: 700,
+    marginBottom: "12px",
+  } as const,
+  subtitle: {
+    fontSize: "22px",
+    fontWeight: 700,
+    marginBottom: "12px",
+  } as const,
+  summaryGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gap: "12px",
+    marginBottom: "16px",
+  } as const,
+  summaryCard: {
+    border: "1px solid #94a3b8",
+    backgroundColor: "#f8fafc",
+    padding: "12px 14px",
+  } as const,
+  summaryCardWarn: {
+    border: "1px solid #fca5a5",
+    backgroundColor: "#fef2f2",
+    padding: "12px 14px",
+  } as const,
+  summaryCardOk: {
+    border: "1px solid #86efac",
+    backgroundColor: "#f0fdf4",
+    padding: "12px 14px",
+  } as const,
+  summaryLabel: {
+    fontSize: "13px",
+    color: "#475569",
+    marginBottom: "4px",
+  } as const,
+  summaryValue: {
+    fontSize: "20px",
+    fontWeight: 700,
+  } as const,
+  table: {
+    width: "100%",
+    borderCollapse: "collapse",
+    tableLayout: "fixed",
+    fontSize: "14px",
+  } as const,
+  th: {
+    border: "1px solid #94a3b8",
+    backgroundColor: "#e2e8f0",
+    padding: "10px 12px",
+    textAlign: "left" as const,
+    verticalAlign: "top" as const,
+  } as const,
+  td: {
+    border: "1px solid #94a3b8",
+    padding: "10px 12px",
+    verticalAlign: "top" as const,
+    wordWrap: "break-word" as const,
+    overflowWrap: "break-word" as const,
+  } as const,
+  rowEven: {
+    backgroundColor: "#ffffff",
+  } as const,
+  rowOdd: {
+    backgroundColor: "#f8fafc",
+  } as const,
+};
+
 export function PrintView({ data }: { data: AppData }) {
   const summary = buildCoverageSummary(data);
   const ingredientRows = buildIngredientPullList(data);
   const miseRows = buildMiseEnPlaceList(data);
 
-  return (
-    <div className="bg-white p-6 text-black print:p-0">
-      <section className="mb-8 break-inside-avoid">
-        <h1 className="text-2xl font-bold">Pizza Plan</h1>
+  const planRows = data.activeParty.rows.map((row) => ({
+    row,
+    summaryRow: summarizePlanRow(data, row),
+  }));
 
-        <div className="mt-2 text-sm">
-          <div>Diners: {summary.diners}</div>
-          <div>Planned servings: {Math.round(summary.plannedServings * 100) / 100}</div>
-          <div>Difference: {Math.round(summary.delta * 100) / 100}</div>
+  const showNotesColumn = planRows.some(
+    ({ row }) => (row.notes ?? "").trim() !== "",
+  );
+
+  const showPostBakeColumn = planRows.some(
+    ({ summaryRow }) => summaryRow.postBake.trim() !== "",
+  );
+
+  return (
+    <div style={styles.page}>
+      <section style={styles.section}>
+        <h1 style={styles.title}>Pizza Plan</h1>
+
+        <div style={styles.summaryGrid}>
+          <div style={styles.summaryCard}>
+            <div style={styles.summaryLabel}>Diners</div>
+            <div style={styles.summaryValue}>{summary.diners}</div>
+          </div>
+
+          <div style={styles.summaryCard}>
+            <div style={styles.summaryLabel}>Planned servings</div>
+            <div style={styles.summaryValue}>
+              {Math.round(summary.plannedServings * 100) / 100}
+            </div>
+          </div>
+
+          <div
+            style={summary.needsMore ? styles.summaryCardWarn : styles.summaryCardOk}
+          >
+            <div style={styles.summaryLabel}>Coverage</div>
+            <div style={styles.summaryValue}>
+              {summary.needsMore
+                ? `Need more (${Math.abs(Math.round(summary.delta * 100) / 100)})`
+                : `Enough (+${Math.round(summary.delta * 100) / 100})`}
+            </div>
+          </div>
         </div>
 
-        <table className="mt-4 w-full border-collapse text-sm">
+        <table style={styles.table}>
           <thead>
             <tr>
-              <th className="border p-2 text-left">Qty</th>
-              <th className="border p-2 text-left">Pizza</th>
-              <th className="border p-2 text-left">Size</th>
-              <th className="border p-2 text-left">Sauce</th>
-              <th className="border p-2 text-left">Cheese</th>
-              <th className="border p-2 text-left">Toppings</th>
-              <th className="border p-2 text-left">Seasonings</th>
-              <th className="border p-2 text-left">Post-bake</th>
-              <th className="border p-2 text-left">Notes</th>
-              <th className="border p-2 text-left">Servings</th>
+              <th style={{ ...styles.th, width: "7%" }}>Qty</th>
+              <th style={{ ...styles.th, width: "14%" }}>Pizza</th>
+              <th style={{ ...styles.th, width: "9%" }}>Size</th>
+              <th style={{ ...styles.th, width: "12%" }}>Sauce</th>
+              <th style={{ ...styles.th, width: "15%" }}>Cheese</th>
+              <th style={{ ...styles.th, width: "18%" }}>Toppings</th>
+              <th style={{ ...styles.th, width: "12%" }}>Seasonings</th>
+              {showPostBakeColumn && (
+                <th style={{ ...styles.th, width: "13%" }}>Post-bake</th>
+              )}
+              {showNotesColumn && (
+                <th style={{ ...styles.th, width: "14%" }}>Notes</th>
+              )}
+              <th style={{ ...styles.th, width: "10%" }}>Servings</th>
             </tr>
           </thead>
 
           <tbody>
-            {data.activeParty.rows.map((row) => {
-              const summaryRow = summarizePlanRow(data, row);
-
-              return (
-                <tr key={row.id}>
-                  <td className="border p-2">{row.quantity}</td>
-                  <td className="border p-2">{summaryRow.pizzaName}</td>
-                  <td className="border p-2">{summaryRow.sizeName}</td>
-                  <td className="border p-2">{summaryRow.sauce}</td>
-                  <td className="border p-2">{summaryRow.cheese}</td>
-                  <td className="border p-2">{summaryRow.toppings}</td>
-                  <td className="border p-2">{summaryRow.seasonings}</td>
-                  <td className="border p-2">{summaryRow.postBake}</td>
-                  <td className="border p-2">{row.notes ?? ""}</td>
-                  <td className="border p-2">
-                    {Math.round(summaryRow.servings * 100) / 100}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </section>
-
-      <section className="mb-8 break-inside-avoid">
-        <h2 className="text-xl font-bold">Ingredient Pull List</h2>
-
-        <table className="mt-4 w-full border-collapse text-sm">
-          <thead>
-            <tr>
-              <th className="border p-2 text-left">Item</th>
-              <th className="border p-2 text-left">Total Amount</th>
-              <th className="border p-2 text-left">Unit</th>
-              <th className="border p-2 text-left">Location</th>
-              <th className="border p-2 text-left">Used For</th>
-              <th className="border p-2 text-left">Pulled</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {ingredientRows.map((row) => (
-              <tr key={row.key}>
-                <td className="border p-2">{row.itemName}</td>
-                <td className="border p-2">
-                  {row.totalValue !== undefined ? Math.round(row.totalValue * 100) / 100 : ""}
+            {planRows.map(({ row, summaryRow }, index) => (
+              <tr
+                key={row.id}
+                style={index % 2 === 0 ? styles.rowEven : styles.rowOdd}
+              >
+                <td style={styles.td}>{row.quantity}</td>
+                <td style={styles.td}>{summaryRow.pizzaName}</td>
+                <td style={styles.td}>{summaryRow.sizeName}</td>
+                <td style={styles.td}>{summaryRow.sauce}</td>
+                <td style={styles.td}>{summaryRow.cheese}</td>
+                <td style={styles.td}>{summaryRow.toppings}</td>
+                <td style={styles.td}>{summaryRow.seasonings}</td>
+                {showPostBakeColumn && (
+                  <td style={styles.td}>{summaryRow.postBake}</td>
+                )}
+                {showNotesColumn && <td style={styles.td}>{row.notes ?? ""}</td>}
+                <td style={styles.td}>
+                  {Math.round(summaryRow.servings * 100) / 100}
                 </td>
-                <td className="border p-2">{row.unitName ?? ""}</td>
-                <td className="border p-2">{row.locationName ?? ""}</td>
-                <td className="border p-2">{row.usedFor.join(", ")}</td>
-                <td className="border p-2">☐</td>
               </tr>
             ))}
           </tbody>
         </table>
       </section>
 
-      <section className="break-inside-avoid">
-        <h2 className="text-xl font-bold">Mise en Place</h2>
+      <section style={styles.section}>
+        <h2 style={styles.subtitle}>Ingredient Pull List</h2>
 
-        <table className="mt-4 w-full border-collapse text-sm">
+        <table style={styles.table}>
           <thead>
             <tr>
-              <th className="border p-2 text-left">Task</th>
-              <th className="border p-2 text-left">Item</th>
-              <th className="border p-2 text-left">Amount</th>
-              <th className="border p-2 text-left">Location</th>
-              <th className="border p-2 text-left">Pizza</th>
-              <th className="border p-2 text-left">Done</th>
+              <th style={{ ...styles.th, width: "20%" }}>Item</th>
+              <th style={{ ...styles.th, width: "10%" }}>Amt</th>
+              <th style={{ ...styles.th, width: "10%" }}>Unit</th>
+              <th style={{ ...styles.th, width: "18%" }}>Location</th>
+              <th style={{ ...styles.th, width: "32%" }}>Used For</th>
+              <th style={{ ...styles.th, width: "10%" }}>Pulled</th>
             </tr>
           </thead>
 
           <tbody>
-            {miseRows.map((row) => (
-              <tr key={row.id}>
-                <td className="border p-2">{row.task}</td>
-                <td className="border p-2">{row.itemName ?? ""}</td>
-                <td className="border p-2">{row.amountText ?? ""}</td>
-                <td className="border p-2">{row.locationName ?? ""}</td>
-                <td className="border p-2">{row.pizzaName}</td>
-                <td className="border p-2">☐</td>
+            {ingredientRows.map((row, index) => (
+              <tr
+                key={row.key}
+                style={index % 2 === 0 ? styles.rowEven : styles.rowOdd}
+              >
+                <td style={styles.td}>{row.itemName}</td>
+                <td style={styles.td}>
+                  {row.totalValue !== undefined
+                    ? Math.round(row.totalValue * 100) / 100
+                    : ""}
+                </td>
+                <td style={styles.td}>{row.unitName ?? ""}</td>
+                <td style={styles.td}>{row.locationName ?? ""}</td>
+                <td style={styles.td}>{row.usedFor.join(", ")}</td>
+                <td style={styles.td}>☐</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      <section style={styles.section}>
+        <h2 style={styles.subtitle}>Mise en Place</h2>
+
+        <table style={styles.table}>
+          <thead>
+            <tr>
+              <th style={{ ...styles.th, width: "30%" }}>Task</th>
+              <th style={{ ...styles.th, width: "24%" }}>Item</th>
+              <th style={{ ...styles.th, width: "16%" }}>Amount</th>
+              <th style={{ ...styles.th, width: "20%" }}>Pizza</th>
+              <th style={{ ...styles.th, width: "10%" }}>Done</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {miseRows.map((row, index) => (
+              <tr
+                key={row.id}
+                style={index % 2 === 0 ? styles.rowEven : styles.rowOdd}
+              >
+                <td style={styles.td}>{row.task}</td>
+                <td style={styles.td}>{row.itemName ?? ""}</td>
+                <td style={styles.td}>{row.amountText ?? ""}</td>
+                <td style={styles.td}>{row.pizzaName}</td>
+                <td style={styles.td}>☐</td>
               </tr>
             ))}
           </tbody>
