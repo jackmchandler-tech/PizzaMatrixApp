@@ -14,6 +14,17 @@ function PlannerScreen() {
 
   const [showPrintView, setShowPrintView] = useState(false);
   const coverage = useMemo(() => buildCoverageSummary(data), [data]);
+  const [qtyDrafts, setQtyDrafts] = useState<Record<string, string>>({});
+
+  function sanitizeQuantityInput(raw: string): number {
+    const match = raw.match(/\d+/);
+    if (!match) return 1;
+  
+    const parsed = Number.parseInt(match[0], 10);
+    if (!Number.isFinite(parsed) || parsed < 1) return 1;
+  
+    return parsed;
+  }
 
   if (showPrintView) {
     return (
@@ -127,7 +138,7 @@ function PlannerScreen() {
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr>
-                  <th className="border p-2 text-left">Qty</th>
+                  <th className="border p-2 text-left">Qty</th>          
                   <th className="border p-2 text-left">Pizza</th>
                   <th className="border p-2 text-left">Size</th>
                   <th className="border p-2 text-left">Info</th>
@@ -153,18 +164,11 @@ function PlannerScreen() {
                           type="number"
                           min={1}
                           value={row.quantity}
-                          onChange={(e) => {
-                            const raw = e.target.value;
+                          onChange={(e) =>
                             updatePlanRow(row.id, {
-                              quantity: raw === "" ? 0 : Number(raw),
-                            });
-                          }}
-                          onBlur={(e) => {
-                            const value = Number(e.target.value);
-                            updatePlanRow(row.id, {
-                              quantity: !value || value < 1 ? 1 : value,
-                            });
-                          }}
+                              quantity: Number(e.target.value) || 1,
+                            })
+                          }
                           className="w-20 rounded border px-2 py-1"
                         />
                       </td>
