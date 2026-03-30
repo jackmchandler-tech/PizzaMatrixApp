@@ -112,28 +112,31 @@ export function PrintView({ data }: { data: AppData }) {
       <section style={styles.section}>
         <h1 style={styles.title}>Pizza Plan</h1>
 
-        <div style={styles.summaryGrid}>
-          <div style={styles.summaryCard}>
-            <div style={styles.summaryLabel}>Diners</div>
-            <div style={styles.summaryValue}>{summary.diners}</div>
-          </div>
-
-          <div style={styles.summaryCard}>
-            <div style={styles.summaryLabel}>Planned servings</div>
-            <div style={styles.summaryValue}>
-              {Math.round(summary.plannedServings * 100) / 100}
-            </div>
-          </div>
-
-          <div
-            style={summary.needsMore ? styles.summaryCardWarn : styles.summaryCardOk}
-          >
-            <div style={styles.summaryLabel}>Coverage</div>
-            <div style={styles.summaryValue}>
-              {summary.needsMore
-                ? `Need more (${Math.abs(Math.round(summary.delta * 100) / 100)})`
-                : `Enough (+${Math.round(summary.delta * 100) / 100})`}
-            </div>
+            <table style={{ ...styles.table, marginBottom: "12px" }}>
+              <tbody>
+                <tr>
+                  {/* Date */}
+                  <td style={{ ...styles.td, width: "20%", fontWeight: 600 }}>
+                    {data.activeParty.date ?? ""}
+                  </td>
+            
+                  {/* Diners */}
+                  <td style={{ ...styles.td, width: "15%", fontWeight: 600 }}>
+                    {data.activeParty.diners} diners
+                  </td>
+            
+                  {/* Summary */}
+                  <td style={{ ...styles.td, width: "65%", fontWeight: 600 }}>
+                    {planRows.reduce((sum, r) => sum + r.row.quantity, 0)} pizzas serving{" "}
+                    {Math.round(summary.plannedServings * 100) / 100}
+                    {summary.needsMore
+                      ? ` (short ${Math.abs(Math.round(summary.delta * 100) / 100)})`
+                      : ""}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+        
           </div>
         </div>
 
