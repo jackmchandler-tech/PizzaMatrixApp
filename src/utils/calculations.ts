@@ -1,4 +1,326 @@
-import {
+import type {
+  AmountBySize,
+  AppData,
+  CoverageSummary,
+  IngredientPullRow,
+  LibraryCategory,
+  LibraryItem,
+  MiseEnPlaceRow,
+  PizzaPlanRow,
+  PizzaRecipe,
+  RecipeLine,
+  SizeRecord,
+} from "../types";
+import { classifyWarning, formatAmount, getUnitById } from "./units";
+
+export interface ResolvedAmount {
+  value?: number;
+  unitId?: string;
+  isCalculated: boolean;
+  reason?: string;
+}
+
+function findClosestDirectAmount(
+  amounts: AmountBySize[],
+  targetSize: SizeRecord,
+  sizes: SizeRecord[],
+): AmountBySize | undefined {
+  const direct = amounts.filter((a) => a.value !== undefined && a.isDirect !== false);
+  if (!direct.length) return undefined;
+
+  const withArea = direct
+    .map((entry) => ({
+      entry,
+      size: sizes.find((s) => s.id === entry.sizeId),
+    }))
+    .filter((row): row is { entry: AmountBySize; size: SizeRecord } => Boolean(row.size));
+
+  withArea.sort((a, b) => {
+    const aDelta = Math.abs(a.size.surfaceAreaSqIn - targetSize.surfaceAreaSqIn);
+    const bDelta = Math.abs(b.size.surfaceAreaSqIn - targetSize.surfaceAreaSqIn);
+    return aDelta - bDelta;
+  });
+
+  return withArea[0]?.entry;
+}
+
+function averageCoveragePerArea(
+  amounts: AmountBySize[],
+  sizes: SizeRecord[],
+): { avgCoverage?: number; unitId?: string } {
+  const direct = amounts.filter((a) => a.value !== undefined);
+  const rows = direct
+    .map((entry) => ({
+      entry,
+      size: sizes.find((s) => s.id === entry.sizeId),
+    }))
+    .filter(
+      (row): row is { entry: AmountBySize; size: SizeRecord } =>
+        Boolean(row.size) && row.entry.value !== undefined,
+    );
+
+  if (!rows.length) return {};
+
+  const totalCoverage = rows.reduce(
+    (sum, row) => sum + (row.entry.value as number) / row.size.surfaceAreaSqIn,
+    0,
+  );
+
+  return {
+    avgCoverage: totalCoverage / rows.length,
+    unitId: rows[0].entry.unitId,
+  };
+}
+
+export function resolveAmountForSize(
+  amounts: AmountBySize[],
+  targetSizeId: string | undefined,
+  sizes: SizeRecord[],
+): ResolvedAmount {
+  if (!targetSizeId) return { isCalculated: false };
+
+  const direct = amounts.find((a) => a.sizeId === targetSizeId && a.value !== undefined);
+  if (direct) {
+    return {
+      value: direct.value,
+      unitId: direct.unitId,
+      isCalculated: false,
+    };
+  }
+
+  const targetSize = sizes.find((s) => s.id === targetSizeId);
+  if (!targetSize) return { isCalculated: false };
+
+  const closest = findClosestDirectAmount(amounts, targetSize, sizes);
+  const coverage = averageCoveragePerArea(amounts, sizes);
+
+  if (coverage.avgCoverage !== undefined) {
+    return {
+      value: coverage.avgCoverage * targetSize.surfaceAreaSqIn,
+      unitId: coverage.unitId ?? closest?.unitId,
+      isCalculated: true,
+      reason: "Calculated from average coverage by area",
+    };
+  }
+
+  if (closest?.value !== undefined) {
+    const closestSize = sizes.find((s) => s.id === closest.sizeId);
+    if (closestSize) {
+      const ratio = targetSize.surfaceAreaSqIn / closestSize.surfaceAreaSqIn;
+      return {
+        value: closest.value * ratio,
+        unitId: closest.unitId,
+        isCalculated: true,
+        reason: "Calculated from closest entered size by area",
+      };
+    }
+  }
+
+  return { isCalculated: false };
+}
+
+export function resolveServingsForSize(
+  pizza: PizzaRecipe,
+  targetSizeId: string | undefined,
+  sizes: SizeRecord[],
+): number {
+  const resolved = resolveAmountForSize(pizza.servingsBySize, targetSizeId, sizes);
+  return resolved.value ?? 0;
+}
+
+function getLibraryCollection(data: AppData, category: LibraryCategory): LibraryItem[] {
+  switch (category) {
+    case "sauces":
+      return data.sauces;
+    case "cheeses":
+      return data.cheeses;
+    case "toppings":
+      return data.toppings;
+    case "seasonings":
+      return data.seasonings;
+    default:
+      return [];
+  }
+}
+
+function findLibraryItem(data: AppData, category: LibraryCategory, itemId: string): LibraryItem | undefined {
+  return getLibraryCollection(data, category).find((item) => item.id === itemId);
+}
+
+function buildUsedForLabel(pizzaName: string, quantity: number): string {
+  return quantity > 1 ? `${pizzaName} x${quantity}` : pizzaName;
+}
+
+function addOrMergeIngredientPull(
+  map: Map<string, IngredientPullRow>,
+  line: RecipeLine,
+  item: LibraryItem,
+  data: AppData,
+  pizzaName: string,
+  sizeId: string,
+  quantity: number,
+): void {
+  const resolved = resolveAmountForSize(line.amountBySize, sizeId, data.sizes);
+  const unit = getUnitById(data.units, resolved.unitId ?? item.defaultUnitId);
+  const location = data.locations.find((loc) => loc.id === item.defaultLocationId);
+  const mergeKey = `${item.name}__${unit?.name ?? ""}__${location?.name ?? ""}`;
+
+  const warnings: string[] = [];
+  const unitWarning = classifyWarning(unit?.kind, unit?.kind);
+  if (unitWarning) warnings.push(unitWarning);
+
+  if (!map.has(mergeKey)) {
+    map.set(mergeKey, {
+      key: mergeKey,
+      itemName: item.name,
+      totalValue: resolved.value !== undefined ? resolved.value * quantity : undefined,
+      unitName: unit?.name,
+      unitKind: unit?.kind,
+      locationName: location?.name,
+      usedFor: [buildUsedForLabel(pizzaName, quantity)],
+      sourcePizzaNames: [pizzaName],
+      isCalculated: resolved.isCalculated,
+      warnings,
+    });
+    return;
+  }
+
+  const existing = map.get(mergeKey)!;
+  if (resolved.value !== undefined) {
+    existing.totalValue = (existing.totalValue ?? 0) + resolved.value * quantity;
+  }
+  existing.usedFor.push(buildUsedForLabel(pizzaName, quantity));
+  existing.sourcePizzaNames.push(pizzaName);
+  existing.isCalculated = existing.isCalculated || resolved.isCalculated;
+  existing.warnings = [...existing.warnings, ...warnings];
+}
+
+function appendMiseEnPlaceRows(
+  rows: MiseEnPlaceRow[],
+  line: RecipeLine,
+  item: LibraryItem,
+  data: AppData,
+  pizzaName: string,
+  sizeId: string,
+): void {
+  const resolved = resolveAmountForSize(line.amountBySize, sizeId, data.sizes);
+  const unit = getUnitById(data.units, resolved.unitId ?? item.defaultUnitId);
+  const location = data.locations.find((loc) => loc.id === item.defaultLocationId);
+  const effectivePrep = line.pizzaSpecificMiseEnPlace || item.defaultMiseEnPlace;
+
+  if (effectivePrep) {
+    rows.push({
+      id: `${line.id}_prep_${pizzaName}`,
+      pizzaName,
+      task: effectivePrep,
+      itemName: item.name,
+      amountText: formatAmount(resolved.value, unit?.name),
+      locationName: location?.name,
+      done: false,
+    });
+  }
+}
+
+function processLineGroup(
+  ingredientMap: Map<string, IngredientPullRow>,
+  miseRows: MiseEnPlaceRow[],
+  data: AppData,
+  pizza: PizzaRecipe,
+  row: PizzaPlanRow,
+  group: RecipeLine[],
+  category: LibraryCategory,
+): void {
+  if (!row.sizeId) return;
+
+  group.forEach((line) => {
+    const item = findLibraryItem(data, category, line.itemId);
+    if (!item) return;
+    addOrMergeIngredientPull(ingredientMap, line, item, data, pizza.name, row.sizeId!, row.quantity);
+    appendMiseEnPlaceRows(miseRows, line, item, data, pizza.name, row.sizeId!);
+  });
+}
+
+export function buildCoverageSummary(data: AppData): CoverageSummary {
+  const plannedServings = data.activeParty.rows.reduce((sum, row) => {
+    if (!row.pizzaId || !row.sizeId) return sum;
+    const pizza = data.pizzas.find((p) => p.id === row.pizzaId);
+    if (!pizza) return sum;
+    return sum + resolveServingsForSize(pizza, row.sizeId, data.sizes) * row.quantity;
+  }, 0);
+
+  const diners = data.activeParty.diners || 0;
+  const delta = plannedServings - diners;
+
+  return {
+    diners,
+    plannedServings,
+    delta,
+    needsMore: delta < 0,
+  };
+}
+
+export function buildIngredientPullList(data: AppData): IngredientPullRow[] {
+  const ingredientMap = new Map<string, IngredientPullRow>();
+
+  data.activeParty.rows.forEach((row) => {
+    if (!row.pizzaId || !row.sizeId) return;
+    const pizza = data.pizzas.find((p) => p.id === row.pizzaId);
+    if (!pizza) return;
+
+    if (pizza.sauceLine) {
+      processLineGroup(ingredientMap, [], data, pizza, row, [pizza.sauceLine], "sauces");
+    }
+
+    processLineGroup(ingredientMap, [], data, pizza, row, [pizza.primaryCheeseLine], "cheeses");
+    processLineGroup(ingredientMap, [], data, pizza, row, pizza.secondaryCheeseLines, "cheeses");
+    processLineGroup(ingredientMap, [], data, pizza, row, pizza.toppingLines, "toppings");
+    processLineGroup(ingredientMap, [], data, pizza, row, pizza.seasoningLines, "seasonings");
+    processLineGroup(ingredientMap, [], data, pizza, row, pizza.postBakeCheeseLines, "cheeses");
+    processLineGroup(ingredientMap, [], data, pizza, row, pizza.postBakeToppingLines, "toppings");
+    processLineGroup(ingredientMap, [], data, pizza, row, pizza.postBakeSeasoningLines, "seasonings");
+  });
+
+  return Array.from(ingredientMap.values()).sort((a, b) => {
+    if ((a.locationName ?? "") !== (b.locationName ?? "")) {
+      return (a.locationName ?? "").localeCompare(b.locationName ?? "");
+    }
+    return a.itemName.localeCompare(b.itemName);
+  });
+}
+
+export function buildMiseEnPlaceList(data: AppData): MiseEnPlaceRow[] {
+  const rows: MiseEnPlaceRow[] = [];
+  const doughTasks: Record<string, number> = {};
+
+  data.activeParty.rows.forEach((row) => {
+    if (!row.pizzaId || !row.sizeId) return;
+    const pizza = data.pizzas.find((p) => p.id === row.pizzaId);
+    if (!pizza) return;
+
+    const dough = resolveAmountForSize(pizza.doughWeightBySize, row.sizeId, data.sizes);
+    if (dough.value !== undefined) {
+      doughTasks[pizza.name] = (doughTasks[pizza.name] ?? 0) + dough.value * row.quantity;
+    }
+
+    if (pizza.sauceLine) {
+      processLineGroup(new Map(), rows, data, pizza, row, [pizza.sauceLine], "sauces");
+    }
+    processLineGroup(new Map(), rows, data, pizza, row, [pizza.primaryCheeseLine], "cheeses");
+    processLineGroup(new Map(), rows, data, pizza, row, pizza.secondaryCheeseLines, "cheeses");
+    processLineGroup(new Map(), rows, data, pizza, row, pizza.toppingLines, "toppings");
+    processLineGroup(new Map(), rows, data, pizza, row, pizza.seasoningLines, "seasonings");
+    processLineGroup(new Map(), rows, data, pizza, row, pizza.postBakeCheeseLines, "cheeses");
+    processLineGroup(new Map(), rows, data, pizza, row, pizza.postBakeToppingLines, "toppings");
+    processLineGroup(new Map(), rows, data, pizza, row, pizza.postBakeSeasoningLines, "seasonings");
+  });
+
+  Object.entries(doughTasks).forEach(([pizzaName, totalDough]) => {
+    rows.unshift({
+      id: `dough_${pizzaName}`,
+      pizzaName,
+      task: "Make dough",
+      amountText: formatAmount(totalDough, "oz"),
+      done: false,
     });
   });
 
