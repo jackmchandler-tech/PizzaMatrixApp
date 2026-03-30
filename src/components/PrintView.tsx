@@ -92,10 +92,12 @@ export function PrintView({ data }: { data: AppData }) {
   const ingredientRows = buildIngredientPullList(data);
   const miseRows = buildMiseEnPlaceList(data);
 
-  const planRows = data.activeParty.rows.map((row) => ({
-    row,
-    summaryRow: summarizePlanRow(data, row),
-  }));
+  const planRows = data.activeParty.rows
+    .filter((row) => row.pizzaId && row.sizeId)
+    .map((row) => ({
+      row,
+      summaryRow: summarizePlanRow(data, row),
+    }));
 
   const showNotesColumn = planRows.some(
     ({ row }) => (row.notes ?? "").trim() !== "",
