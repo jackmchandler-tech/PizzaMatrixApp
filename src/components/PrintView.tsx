@@ -5,6 +5,7 @@ import {
   buildMiseEnPlaceList,
   summarizePlanRow,
 } from "../utils/calculations";
+import { formatAmount } from "../utils/units";
 
 const styles = {
   page: {
@@ -185,12 +186,11 @@ export function PrintView({ data }: { data: AppData }) {
         <table style={styles.table}>
           <thead>
             <tr>
-              <th style={{ ...styles.th, width: "20%" }}>Item</th>
-              <th style={{ ...styles.th, width: "10%" }}>Amt</th>
-              <th style={{ ...styles.th, width: "10%" }}>Unit</th>
+              <th style={{ ...styles.th, width: "24%" }}>Item</th>
+              <th style={{ ...styles.th, width: "14%" }}>Amt</th>
               <th style={{ ...styles.th, width: "18%" }}>Location</th>
-              <th style={{ ...styles.th, width: "32%" }}>Used For</th>
-              <th style={{ ...styles.th, width: "10%" }}>Pulled</th>
+              <th style={{ ...styles.th, width: "36%" }}>Used For</th>
+              <th style={{ ...styles.th, width: "8%" }}>☐</th>
             </tr>
           </thead>
 
@@ -201,12 +201,7 @@ export function PrintView({ data }: { data: AppData }) {
                 style={index % 2 === 0 ? styles.rowEven : styles.rowOdd}
               >
                 <td style={styles.td}>{row.itemName}</td>
-                <td style={styles.td}>
-                  {row.totalValue !== undefined
-                    ? Math.round(row.totalValue * 100) / 100
-                    : ""}
-                </td>
-                <td style={styles.td}>{row.unitName ?? ""}</td>
+                <td style={styles.td}>{formatAmount(row.totalValue, row.unitName)}</td>
                 <td style={styles.td}>{row.locationName ?? ""}</td>
                 <td style={styles.td}>{row.usedFor.join(", ")}</td>
                 <td style={styles.td}>☐</td>
@@ -222,11 +217,11 @@ export function PrintView({ data }: { data: AppData }) {
         <table style={styles.table}>
           <thead>
             <tr>
-              <th style={{ ...styles.th, width: "30%" }}>Task</th>
+              <th style={{ ...styles.th, width: "32%" }}>Task</th>
               <th style={{ ...styles.th, width: "24%" }}>Item</th>
               <th style={{ ...styles.th, width: "16%" }}>Amount</th>
-              <th style={{ ...styles.th, width: "20%" }}>Pizza</th>
-              <th style={{ ...styles.th, width: "10%" }}>Done</th>
+              <th style={{ ...styles.th, width: "22%" }}>Pizza</th>
+              <th style={{ ...styles.th, width: "6%" }}>☐</th>
             </tr>
           </thead>
 
