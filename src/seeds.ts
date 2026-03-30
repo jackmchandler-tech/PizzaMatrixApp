@@ -1,12 +1,4 @@
-import { AppData, Id, LibraryItem, LocationRecord, PizzaPlanRow, SizeRecord, UnitRecord } from "./types";
-  { id: "unit_inches", name: "inches", symbol: "inches", kind: "length", sortOrder: 5, isBuiltIn: true },
-  { id: "unit_each", name: "each", symbol: "ea", kind: "count", sortOrder: 6, isBuiltIn: true },
-];
-
-export const seededSizes: SizeRecord[] = [
-  {
-    id: "size_13_round",
-    name: '13" Round',
+import { AppData, Id, LibraryCategory, LibraryItem, LocationRecord, PizzaPlanRow, SizeRecord, UnitRecord } from "./types";
     shape: "round",
     diameterInches: 13,
     surfaceAreaSqIn: Math.PI * Math.pow(13 / 2, 2),
@@ -30,21 +22,21 @@ export const seededSizes: SizeRecord[] = [
 
 function makeLibraryItem(
   id: string,
-  category: LibraryItem["category"],
+  category: LibraryCategory,
   name: string,
   defaultLocationId?: string,
   defaultUnitId?: string,
   defaultMiseEnPlace?: string,
 ): LibraryItem {
   return { id, category, name, defaultLocationId, defaultUnitId, defaultMiseEnPlace };
-} // end of makeLibraryItem()
+}
 
 function blankPlanRow(): PizzaPlanRow {
   return {
     id: makeId("planrow"),
     quantity: 1,
   };
-} // end of blankPlanRow()
+}
 
 export const initialAppData: AppData = {
   version: 1,
@@ -75,4 +67,3 @@ export const initialAppData: AppData = {
     rows: [blankPlanRow()],
   },
 };
-// end of seeds.ts
