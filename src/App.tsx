@@ -153,11 +153,18 @@ function PlannerScreen() {
                           type="number"
                           min={1}
                           value={row.quantity}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            const raw = e.target.value;
                             updatePlanRow(row.id, {
-                              quantity: Number(e.target.value) || 1,
-                            })
-                          }
+                              quantity: raw === "" ? 0 : Number(raw),
+                            });
+                          }}
+                          onBlur={(e) => {
+                            const value = Number(e.target.value);
+                            updatePlanRow(row.id, {
+                              quantity: !value || value < 1 ? 1 : value,
+                            });
+                          }}
                           className="w-20 rounded border px-2 py-1"
                         />
                       </td>
