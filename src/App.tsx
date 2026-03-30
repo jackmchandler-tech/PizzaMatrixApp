@@ -124,14 +124,8 @@ function PlannerScreen() {
         </section>
 
         <section className="rounded-2xl bg-white p-4 shadow md:p-6">
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-3">
             <h2 className="text-xl font-bold">Pizza Plan</h2>
-            <button
-              className="rounded bg-blue-700 px-4 py-2 text-white"
-              onClick={addPlanRow}
-            >
-              Add Pizza Row
-            </button>
           </div>
 
           <div className="overflow-x-auto">
@@ -273,6 +267,14 @@ function PlannerScreen() {
                 })}
               </tbody>
             </table>
+          </div>
+          <div className="mt-2">
+            <button
+              className="rounded bg-blue-700 px-3 py-1.5 text-white"
+              onClick={addPlanRow}
+            >
+              Add Pizza Row
+            </button>
           </div>
         </section>
       </div>
