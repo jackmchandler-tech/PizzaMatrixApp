@@ -4,12 +4,6 @@ import React from "react";
                   <td className="border p-2">{row.notes ?? ""}</td>
                   <td className="border p-2">{Math.round(summaryRow.servings * 100) / 100}</td>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </section>
-
       <section className="mb-8 break-inside-avoid">
         <h2 className="text-xl font-bold">Ingredient Pull List</h2>
         <table className="w-full border-collapse mt-4 text-sm">
