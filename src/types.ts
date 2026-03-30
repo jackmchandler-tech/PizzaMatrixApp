@@ -1,4 +1,15 @@
 export type Id = string;
+  toppingLines: RecipeLine[];
+  seasoningLines: RecipeLine[];
+  postBakeCheeseLines: RecipeLine[];
+  postBakeToppingLines: RecipeLine[];
+  postBakeSeasoningLines: RecipeLine[];
+  servingsBySize: AmountBySize[];
+  doughWeightBySize: AmountBySize[];
+  notes?: string;
+}
+
+export interface PizzaPlanRow {
   id: Id;
   pizzaId?: Id;
   sizeId?: Id;
@@ -58,4 +69,3 @@ export interface AppData {
   pizzas: PizzaRecipe[];
   activeParty: PartyPlan;
 }
-// end of types.ts
