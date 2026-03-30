@@ -132,17 +132,17 @@ function PlannerScreen() {
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr>
-                  <th className="border p-2 text-left">Qty</th>          
-                  <th className="border p-2 text-left">Pizza</th>
-                  <th className="border p-2 text-left">Size</th>
-                  <th className="border p-2 text-left">Info</th>
-                  <th className="border p-2 text-left">Sauce</th>
-                  <th className="border p-2 text-left">Cheese</th>
-                  <th className="border p-2 text-left">Toppings</th>
-                  <th className="border p-2 text-left">Seasonings</th>
-                  <th className="border p-2 text-left">Post-bake</th>
-                  <th className="border p-2 text-left">Notes</th>
-                  <th className="border p-2 text-left">Remove</th>
+                  <th className="border px-2 py-1 text-left"">Qty</th>          
+                  <th className="border px-2 py-1 text-left"">Pizza</th>
+                  <th className="border px-2 py-1 text-left"">Size</th>
+                  <th className="border px-2 py-1 text-left"">Info</th>
+                  <th className="border px-2 py-1 text-left"">Sauce</th>
+                  <th className="border px-2 py-1 text-left"">Cheese</th>
+                  <th className="border px-2 py-1 text-left"">Toppings</th>
+                  <th className="border px-2 py-1 text-left"">Seasonings</th>
+                  <th className="border px-2 py-1 text-left"">Post-bake</th>
+                  <th className="border px-2 py-1 text-left"">Notes</th>
+                  <th className="border px-2 py-1 text-left"">Remove</th>
                 </tr>
               </thead>
 
@@ -153,7 +153,7 @@ function PlannerScreen() {
 
                   return (
                     <tr key={row.id}>
-                      <td className="border p-2 align-top">
+                      <td className="border px-2 py-1 align-top">
                         <input
                           type="text"
                           inputMode="numeric"
@@ -180,7 +180,7 @@ function PlannerScreen() {
                           className="w-12 rounded border px-1 py-1 text-center"
                         />
                       </td>
-                      <td className="border p-2 align-top">
+                      <td className="border px-2 py-1 align-top">
                         <select
                           value={row.pizzaId ?? ""}
                           onChange={(e) =>
@@ -188,7 +188,7 @@ function PlannerScreen() {
                               pizzaId: e.target.value || undefined,
                             })
                           }
-                          className="w-48 rounded border px-2 py-1"
+                          className="w-40 rounded border px-1 py-1"
                         >
                           <option value="">Select pizza</option>
                           {data.pizzas.map((pizzaOption) => (
@@ -199,7 +199,7 @@ function PlannerScreen() {
                         </select>
                       </td>
 
-                      <td className="border p-2 align-top">
+                      <td className="border px-2 py-1 align-top">
                         <select
                           value={row.sizeId ?? ""}
                           onChange={(e) =>
@@ -207,7 +207,7 @@ function PlannerScreen() {
                               sizeId: e.target.value || undefined,
                             })
                           }
-                          className="w-48 rounded border px-2 py-1"
+                          className="w-40 rounded border px-1 py-1"
                         >
                           <option value="">Select size</option>
                           {data.sizes.map((size) => (
@@ -218,7 +218,7 @@ function PlannerScreen() {
                         </select>
                       </td>
 
-                      <td className="border p-2 align-top">
+                      <td className="border px-2 py-1 align-top">
                         {pizza?.description ? (
                           <details>
                             <summary className="cursor-pointer text-blue-700">
@@ -231,32 +231,32 @@ function PlannerScreen() {
                         ) : null}
                       </td>
 
-                      <td className="border p-2 align-top">{summary.sauce}</td>
-                      <td className="border p-2 align-top">{summary.cheese}</td>
-                      <td className="border p-2 align-top">
+                      <td className="border px-2 py-1 align-top">{summary.sauce}</td>
+                      <td className="border px-2 py-1 align-top">{summary.cheese}</td>
+                      <td className="border px-2 py-1 align-top">
                         {summary.toppings}
                       </td>
-                      <td className="border p-2 align-top">
+                      <td className="border px-2 py-1 align-top">
                         {summary.seasonings}
                       </td>
-                      <td className="border p-2 align-top">
+                      <td className="border px-2 py-1 align-top">
                         {summary.postBake}
                       </td>
 
-                      <td className="border p-2 align-top">
+                      <td className="border px-2 py-1 align-top">
                         <textarea
                           value={row.notes ?? ""}
                           onChange={(e) =>
                             updatePlanRow(row.id, { notes: e.target.value })
                           }
-                          className="w-48 rounded border px-2 py-1"
-                          rows={2}
+                          className="w-40 rounded border px-1 py-1"
+                          rows={1}
                         />
                       </td>
 
-                      <td className="border p-2 align-top">
+                      <td className="border px-2 py-1 align-top">
                         <button
-                          className="rounded bg-red-600 px-3 py-1 text-white"
+                          className="rounded bg-red-600 px-2 py-1 text-white"
                           onClick={() => removePlanRow(row.id)}
                         >
                           Remove
