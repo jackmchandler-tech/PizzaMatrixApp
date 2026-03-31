@@ -77,6 +77,47 @@ function blankUnit(sortOrder: number): UnitRecord {
   };
 }
 
+function collectIngredientUsage(
+  data: AppData,
+  category: LibraryCategory,
+): Record<string, string[]> {
+  const usage = new Map<string, Set<string>>();
+
+  function track(itemId: string | undefined, pizzaName: string) {
+    if (!itemId) return;
+    if (!usage.has(itemId)) usage.set(itemId, new Set<string>());
+    usage.get(itemId)!.add(pizzaName);
+  }
+
+  data.pizzas.forEach((pizza) => {
+    if (category === "sauces") {
+      track(pizza.sauceLine?.itemId, pizza.name);
+    }
+
+    if (category === "cheeses") {
+      track(pizza.primaryCheeseLine.itemId, pizza.name);
+      pizza.secondaryCheeseLines.forEach((line) => track(line.itemId, pizza.name));
+      pizza.postBakeCheeseLines.forEach((line) => track(line.itemId, pizza.name));
+    }
+
+    if (category === "toppings") {
+      pizza.toppingLines.forEach((line) => track(line.itemId, pizza.name));
+      pizza.postBakeToppingLines.forEach((line) => track(line.itemId, pizza.name));
+    }
+
+    if (category === "seasonings") {
+      pizza.seasoningLines.forEach((line) => track(line.itemId, pizza.name));
+      pizza.postBakeSeasoningLines.forEach((line) => track(line.itemId, pizza.name));
+    }
+  });
+
+  const result: Record<string, string[]> = {};
+  usage.forEach((pizzaNames, itemId) => {
+    result[itemId] = Array.from(pizzaNames).sort();
+  });
+  return result;
+}
+
 function LibraryItemEditor({
   data,
   category,
@@ -89,6 +130,11 @@ function LibraryItemEditor({
   onSaveItems: (items: LibraryItem[]) => void;
 }) {
   const [drafts, setDrafts] = useState<LibraryItem[]>(items);
+
+  const usageByItemId = useMemo(
+    () => collectIngredientUsage(data, category),
+    [data, category],
+  );
 
   useEffect(() => {
     setDrafts(items);
@@ -107,6 +153,16 @@ function LibraryItemEditor({
   }
 
   function removeItem(index: number) {
+    const item = drafts[index];
+    const usedBy = usageByItemId[item.id] ?? [];
+
+    if (usedBy.length > 0) {
+      alert(
+        `Cannot remove "${item.name || "this item"}". It is used by: ${usedBy.join(", ")}`,
+      );
+      return;
+    }
+
     setDrafts((current) => current.filter((_, itemIndex) => itemIndex !== index));
   }
 
@@ -168,84 +224,95 @@ function LibraryItemEditor({
               Notes
             </th>
             <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>
+              Used by pizzas
+            </th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>
               Remove
             </th>
           </tr>
         </thead>
         <tbody>
-          {drafts.map((item, index) => (
-            <tr key={item.id}>
-              <td style={{ border: "1px solid #ccc", padding: 6 }}>
-                <input
-                  type="text"
-                  value={item.name}
-                  onChange={(e) => updateDraft(index, { name: e.target.value })}
-                  style={{ width: "100%" }}
-                />
-              </td>
-              <td style={{ border: "1px solid #ccc", padding: 6 }}>
-                <select
-                  value={item.defaultLocationId ?? ""}
-                  onChange={(e) =>
-                    updateDraft(index, {
-                      defaultLocationId: e.target.value || undefined,
-                    })
-                  }
-                  style={{ width: "100%" }}
-                >
-                  <option value="">Select</option>
-                  {data.locations.map((location) => (
-                    <option key={location.id} value={location.id}>
-                      {location.name}
-                    </option>
-                  ))}
-                </select>
-              </td>
-              <td style={{ border: "1px solid #ccc", padding: 6 }}>
-                <select
-                  value={item.defaultUnitId ?? ""}
-                  onChange={(e) =>
-                    updateDraft(index, {
-                      defaultUnitId: e.target.value || undefined,
-                    })
-                  }
-                  style={{ width: "100%" }}
-                >
-                  <option value="">Select</option>
-                  {data.units.map((unit) => (
-                    <option key={unit.id} value={unit.id}>
-                      {unit.name}
-                    </option>
-                  ))}
-                </select>
-              </td>
-              <td style={{ border: "1px solid #ccc", padding: 6 }}>
-                <input
-                  type="text"
-                  value={item.defaultMiseEnPlace ?? ""}
-                  onChange={(e) =>
-                    updateDraft(index, {
-                      defaultMiseEnPlace: e.target.value,
-                    })
-                  }
-                  style={{ width: "100%" }}
-                />
-              </td>
-              <td style={{ border: "1px solid #ccc", padding: 6 }}>
-                <input
-                  type="text"
-                  value={item.notes ?? ""}
-                  onChange={(e) => updateDraft(index, { notes: e.target.value })}
-                  style={{ width: "100%" }}
-                />
-              </td>
-              <td style={{ border: "1px solid #ccc", padding: 6 }}>
-                <button type="button" onClick={() => removeItem(index)}>
-                  Remove
-                </button>
-              </td>
-            </tr>
-          ))}
+          {drafts.map((item, index) => {
+            const usedBy = usageByItemId[item.id] ?? [];
+            const isInUse = usedBy.length > 0;
+
+            return (
+              <tr key={item.id}>
+                <td style={{ border: "1px solid #ccc", padding: 6 }}>
+                  <input
+                    type="text"
+                    value={item.name}
+                    onChange={(e) => updateDraft(index, { name: e.target.value })}
+                    style={{ width: "100%" }}
+                  />
+                </td>
+                <td style={{ border: "1px solid #ccc", padding: 6 }}>
+                  <select
+                    value={item.defaultLocationId ?? ""}
+                    onChange={(e) =>
+                      updateDraft(index, {
+                        defaultLocationId: e.target.value || undefined,
+                      })
+                    }
+                    style={{ width: "100%" }}
+                  >
+                    <option value="">Select</option>
+                    {data.locations.map((location) => (
+                      <option key={location.id} value={location.id}>
+                        {location.name}
+                      </option>
+                    ))}
+                  </select>
+                </td>
+                <td style={{ border: "1px solid #ccc", padding: 6 }}>
+                  <select
+                    value={item.defaultUnitId ?? ""}
+                    onChange={(e) =>
+                      updateDraft(index, {
+                        defaultUnitId: e.target.value || undefined,
+                      })
+                    }
+                    style={{ width: "100%" }}
+                  >
+                    <option value="">Select</option>
+                    {data.units.map((unit) => (
+                      <option key={unit.id} value={unit.id}>
+                        {unit.name}
+                      </option>
+                    ))}
+                  </select>
+                </td>
+                <td style={{ border: "1px solid #ccc", padding: 6 }}>
+                  <input
+                    type="text"
+                    value={item.defaultMiseEnPlace ?? ""}
+                    onChange={(e) =>
+                      updateDraft(index, {
+                        defaultMiseEnPlace: e.target.value,
+                      })
+                    }
+                    style={{ width: "100%" }}
+                  />
+                </td>
+                <td style={{ border: "1px solid #ccc", padding: 6 }}>
+                  <input
+                    type="text"
+                    value={item.notes ?? ""}
+                    onChange={(e) => updateDraft(index, { notes: e.target.value })}
+                    style={{ width: "100%" }}
+                  />
+                </td>
+                <td style={{ border: "1px solid #ccc", padding: 6 }}>
+                  {usedBy.join(", ")}
+                </td>
+                <td style={{ border: "1px solid #ccc", padding: 6 }}>
+                  <button type="button" onClick={() => removeItem(index)} disabled={isInUse}>
+                    Remove
+                  </button>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
