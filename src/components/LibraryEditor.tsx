@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   AppData,
   LibraryCategory,
@@ -90,6 +90,10 @@ function LibraryItemEditor({
 }) {
   const [drafts, setDrafts] = useState<LibraryItem[]>(items);
 
+  useEffect(() => {
+    setDrafts(items);
+  }, [items, category]);
+
   function updateDraft(index: number, updates: Partial<LibraryItem>) {
     setDrafts((current) =>
       current.map((item, itemIndex) =>
@@ -110,6 +114,7 @@ function LibraryItemEditor({
     const cleaned = drafts
       .map((item) => ({
         ...item,
+        category,
         name: item.name.trim(),
         defaultMiseEnPlace: item.defaultMiseEnPlace?.trim() || undefined,
         notes: item.notes?.trim() || undefined,
@@ -256,6 +261,10 @@ function LocationEditor({
 }) {
   const [drafts, setDrafts] = useState<LocationRecord[]>(locations);
 
+  useEffect(() => {
+    setDrafts(locations);
+  }, [locations]);
+
   function updateDraft(index: number, updates: Partial<LocationRecord>) {
     setDrafts((current) =>
       current.map((item, itemIndex) =>
@@ -350,6 +359,10 @@ function UnitEditor({
   onSave: (units: UnitRecord[]) => void;
 }) {
   const [drafts, setDrafts] = useState<UnitRecord[]>(units);
+
+  useEffect(() => {
+    setDrafts(units);
+  }, [units]);
 
   function updateDraft(index: number, updates: Partial<UnitRecord>) {
     setDrafts((current) =>
@@ -473,14 +486,15 @@ export function LibraryEditor({ data, onChangeData }: LibraryEditorProps) {
   const [currentTab, setCurrentTab] = useState<SetupTab>("sauces");
 
   const tabButtons = useMemo(
-    () => [
-      { id: "sauces", label: "Sauces" },
-      { id: "cheeses", label: "Cheeses" },
-      { id: "toppings", label: "Toppings" },
-      { id: "seasonings", label: "Seasonings" },
-      { id: "locations", label: "Locations" },
-      { id: "units", label: "Units" },
-    ] as const,
+    () =>
+      [
+        { id: "sauces", label: "Sauces" },
+        { id: "cheeses", label: "Cheeses" },
+        { id: "toppings", label: "Toppings" },
+        { id: "seasonings", label: "Seasonings" },
+        { id: "locations", label: "Locations" },
+        { id: "units", label: "Units" },
+      ] as const,
     [],
   );
 
@@ -520,6 +534,7 @@ export function LibraryEditor({ data, onChangeData }: LibraryEditorProps) {
         />
       ) : (
         <LibraryItemEditor
+          key={currentTab}
           data={data}
           category={currentTab}
           items={getCollection(data, currentTab)}
