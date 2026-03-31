@@ -1,11 +1,7 @@
 import { useMemo, useState } from "react";
                 ...draft,
                 postBakeToppingLines: removeLineArray(draft.postBakeToppingLines, index),
-              })
-            }
-          />
-        ))}
-      </section>
+        }
 
       <section className="rounded-2xl bg-white p-4 shadow md:p-6 space-y-4">
         <div className="flex items-center justify-between">
