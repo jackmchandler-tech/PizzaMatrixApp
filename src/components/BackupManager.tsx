@@ -28,12 +28,14 @@ export function BackupManager({ data, onImportData }: BackupManagerProps) {
 
   return (
     <div style={{ border: "1px solid #ccc", padding: 12 }}>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+      <h3 style={{ marginTop: 0 }}>Backup</h3>
+
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
         <button type="button" onClick={exportBackup}>
           Export Full Backup
         </button>
 
-        <label style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+        <label style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
           <span>Import Full Backup</span>
           <input
             type="file"
@@ -45,7 +47,10 @@ export function BackupManager({ data, onImportData }: BackupManagerProps) {
               const confirmed = window.confirm(
                 "Importing a backup will replace the current app data. Continue?",
               );
-              if (!confirmed) return;
+              if (!confirmed) {
+                e.target.value = "";
+                return;
+              }
 
               try {
                 await importBackup(file);
