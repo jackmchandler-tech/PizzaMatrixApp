@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
-import { AppStateProvider, useAppState } from "./context/AppState";
-import { buildCoverageSummary, summarizePlanRow } from "./utils/calculations";
-import { PrintView } from "./components/PrintView";
-import { PizzaEditor } from "./components/PizzaEditor";
-import { LibraryEditor } from "./components/LibraryEditor";
-import type { PizzaRecipe } from "./types";
+import { useMemo, useState }                       from "react";
+import { AppStateProvider, useAppState }           from "./context/AppState";
+import { buildCoverageSummary, summarizePlanRow }  from "./utils/calculations";
+import { PrintView }                               from "./components/PrintView";
+import { PizzaEditor }                             from "./components/PizzaEditor";
+import { LibraryEditor }                           from "./components/LibraryEditor";
+import type { PizzaRecipe }                        from "./types";
+import { BackupManager }                           from "./components/BackupManager";
 
 function PlannerScreen() {
   const {
@@ -146,7 +147,10 @@ function PlannerScreen() {
             onDeletePizza={deletePizza}
           />
         ) : currentView === "librarySetup" ? (
-          <LibraryEditor data={data} onChangeData={setData} />
+         <div style={{ display: "grid", gap: 16 }}>
+            <BackupManager data={data} onImportData={setData} />
+            <LibraryEditor data={data} onChangeData={setData} />
+         </div>
         ) : (
           <>
             <section className="rounded-2xl bg-white p-4 shadow md:p-6">
