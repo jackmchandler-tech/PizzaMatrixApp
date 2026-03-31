@@ -259,6 +259,13 @@ export const initialAppData: AppData = {
   activeParty: {
     id: makeId("party"),
     diners: 0,
-    rows: [blankPlanRow()],
+    rows: [
+      blankPlanRow(),
+      blankPlanRow(),
+      blankPlanRow(),
+      blankPlanRow(),
+      blankPlanRow(),
+      blankPlanRow(),
+    ],
   },
 };

@@ -287,10 +287,70 @@ export function buildIngredientPullList(data: AppData): IngredientPullRow[] {
     return a.itemName.localeCompare(b.itemName);
   });
 }
-
 export function buildMiseEnPlaceList(data: AppData): MiseEnPlaceRow[] {
-  const rows: MiseEnPlaceRow[] = [];
+  const combinedMap = new Map<
+    string,
+    {
+      id: string;
+      task: string;
+      itemName?: string;
+      amountValue?: number;
+      unitName?: string;
+      pizzaNames: Set<string>;
+    }
+  >();
+
   const doughTasks: Record<string, number> = {};
+
+  function addCombinedMiseRow(
+    pizza: PizzaRecipe,
+    row: PizzaPlanRow,
+    line: RecipeLine,
+    item: LibraryItem,
+  ) {
+    if (!row.sizeId) return;
+
+    const resolved = resolveAmountForSize(line.amountBySize, row.sizeId, data.sizes);
+    const unit = getUnitById(data.units, resolved.unitId ?? item.defaultUnitId);
+    const effectivePrep = line.pizzaSpecificMiseEnPlace || item.defaultMiseEnPlace;
+
+    if (!effectivePrep) return;
+
+    const key = `${effectivePrep}__${item.name}__${unit?.name ?? ""}`;
+    const existing = combinedMap.get(key);
+
+    if (!existing) {
+      combinedMap.set(key, {
+        id: key,
+        task: effectivePrep,
+        itemName: item.name,
+        amountValue:
+          resolved.value !== undefined ? resolved.value * row.quantity : undefined,
+        unitName: unit?.name,
+        pizzaNames: new Set([pizza.name]),
+      });
+      return;
+    }
+
+    if (resolved.value !== undefined) {
+      existing.amountValue = (existing.amountValue ?? 0) + resolved.value * row.quantity;
+    }
+
+    existing.pizzaNames.add(pizza.name);
+  }
+
+  function processCombinedGroup(
+    pizza: PizzaRecipe,
+    row: PizzaPlanRow,
+    group: RecipeLine[],
+    category: LibraryCategory,
+  ) {
+    group.forEach((line) => {
+      const item = findLibraryItem(data, category, line.itemId);
+      if (!item) return;
+      addCombinedMiseRow(pizza, row, line, item);
+    });
+  }
 
   data.activeParty.rows.forEach((row) => {
     if (!row.pizzaId || !row.sizeId) return;
@@ -303,30 +363,44 @@ export function buildMiseEnPlaceList(data: AppData): MiseEnPlaceRow[] {
     }
 
     if (pizza.sauceLine) {
-      processLineGroup(new Map(), rows, data, pizza, row, [pizza.sauceLine], "sauces");
+      processCombinedGroup(pizza, row, [pizza.sauceLine], "sauces");
     }
-    processLineGroup(new Map(), rows, data, pizza, row, [pizza.primaryCheeseLine], "cheeses");
-    processLineGroup(new Map(), rows, data, pizza, row, pizza.secondaryCheeseLines, "cheeses");
-    processLineGroup(new Map(), rows, data, pizza, row, pizza.toppingLines, "toppings");
-    processLineGroup(new Map(), rows, data, pizza, row, pizza.seasoningLines, "seasonings");
-    processLineGroup(new Map(), rows, data, pizza, row, pizza.postBakeCheeseLines, "cheeses");
-    processLineGroup(new Map(), rows, data, pizza, row, pizza.postBakeToppingLines, "toppings");
-    processLineGroup(new Map(), rows, data, pizza, row, pizza.postBakeSeasoningLines, "seasonings");
+    processCombinedGroup(pizza, row, [pizza.primaryCheeseLine], "cheeses");
+    processCombinedGroup(pizza, row, pizza.secondaryCheeseLines, "cheeses");
+    processCombinedGroup(pizza, row, pizza.toppingLines, "toppings");
+    processCombinedGroup(pizza, row, pizza.seasoningLines, "seasonings");
+    processCombinedGroup(pizza, row, pizza.postBakeCheeseLines, "cheeses");
+    processCombinedGroup(pizza, row, pizza.postBakeToppingLines, "toppings");
+    processCombinedGroup(pizza, row, pizza.postBakeSeasoningLines, "seasonings");
   });
 
-  Object.entries(doughTasks).forEach(([pizzaName, totalDough]) => {
-    rows.unshift({
-      id: `dough_${pizzaName}`,
-      pizzaName,
-      task: "Make dough",
-      amountText: formatAmount(totalDough, "oz"),
+  const rows: MiseEnPlaceRow[] = Object.values(doughTasks).length
+    ? Object.entries(doughTasks).map(([pizzaName, totalDough]) => ({
+        id: `dough_${pizzaName}`,
+        pizzaName,
+        task: "Make dough",
+        amountText: formatAmount(totalDough, "oz"),
+        done: false,
+      }))
+    : [];
+
+  Array.from(combinedMap.values()).forEach((entry) => {
+    rows.push({
+      id: entry.id,
+      pizzaName: Array.from(entry.pizzaNames).sort().join(", "),
+      task: entry.task,
+      itemName: entry.itemName,
+      amountText: formatAmount(entry.amountValue, entry.unitName),
       done: false,
     });
   });
 
   return rows.sort((a, b) => {
-    if (a.pizzaName !== b.pizzaName) return a.pizzaName.localeCompare(b.pizzaName);
-    return a.task.localeCompare(b.task);
+    if (a.task !== b.task) return a.task.localeCompare(b.task);
+    if ((a.itemName ?? "") !== (b.itemName ?? "")) {
+      return (a.itemName ?? "").localeCompare(b.itemName ?? "");
+    }
+    return a.pizzaName.localeCompare(b.pizzaName);
   });
 }
 
