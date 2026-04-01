@@ -6,6 +6,7 @@ import { PizzaEditor } from "./components/PizzaEditor";
 import { LibraryEditor } from "./components/LibraryEditor";
 import { BackupManager } from "./components/BackupManager";
 import type { PizzaRecipe } from "./types";
+import { PwaUpdater } from "./components/PwaUpdater";
 
 function PlannerScreen() {
   const {
@@ -298,6 +299,15 @@ export default function App() {
   return (
     <AppStateProvider>
       <AppInner />
+    </AppStateProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <AppStateProvider>
+      <AppInner />
+      <PwaUpdater />
     </AppStateProvider>
   );
 }
