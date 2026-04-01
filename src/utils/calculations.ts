@@ -130,6 +130,17 @@ export function resolveServingsForSize(
   return size?.defaultServings ?? 0;
 }
 
+export function resolveDoughWeightForSize(
+  pizza: PizzaRecipe,
+  targetSizeId: string | undefined,
+  sizes: SizeRecord[],
+): number {
+  const resolved = resolveAmountForSize(pizza.doughWeightBySize, targetSizeId, sizes);
+  if (resolved.value !== undefined) return resolved.value;
+  const size = sizes.find((entry) => entry.id === targetSizeId);
+  return size?.defaultDoughWeight ?? 0;
+}
+
 function getLibraryCollection(data: AppData, category: LibraryCategory): LibraryItem[] {
   switch (category) {
     case "sauces":
