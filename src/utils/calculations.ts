@@ -376,21 +376,23 @@ export function buildMiseEnPlaceList(data: AppData): MiseEnPlaceRow[] {
     if (!row.pizzaId || !row.sizeId) return;
     const pizza = data.pizzas.find((p) => p.id === row.pizzaId);
     if (!pizza) return;
-
-    const dough = resolveAmountForSize(pizza.doughWeightBySize, row.sizeId, data.sizes);
+    
+    const doughWeight = resolveDoughWeightForSize(pizza, row.sizeId, data.sizes);
     const doughType = data.doughs.find((entry) => entry.id === pizza.doughTypeId);
-    if (dough.value !== undefined && doughType) {
+    
+    if (doughWeight > 0 && doughType) {
       const key = doughType.id;
       const existing = doughMap.get(key);
+    
       if (!existing) {
         doughMap.set(key, {
           id: `dough_${key}`,
           doughName: doughType.name,
-          amountValue: dough.value * row.quantity,
+          amountValue: doughWeight * row.quantity,
           pizzaNames: new Set([pizza.name]),
         });
       } else {
-        existing.amountValue += dough.value * row.quantity;
+        existing.amountValue += doughWeight * row.quantity;
         existing.pizzaNames.add(pizza.name);
       }
     }
