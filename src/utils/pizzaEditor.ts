@@ -1,4 +1,10 @@
-import type { AppData, AmountBySize, LibraryCategory, PizzaRecipe, RecipeLine } from "../types";
+import type {
+  AmountBySize,
+  AppData,
+  LibraryCategory,
+  PizzaRecipe,
+  RecipeLine,
+} from "../types";
 import { makeId } from "../seeds";
 
 export interface EditableAmountRow {
@@ -20,6 +26,7 @@ export interface EditablePizzaRecipe {
   id?: string;
   name: string;
   description: string;
+  doughTypeId: string;
   sauceLine: EditableRecipeLine | null;
   primaryCheeseLine: EditableRecipeLine;
   secondaryCheeseLines: EditableRecipeLine[];
@@ -60,6 +67,7 @@ export function createEmptyEditablePizza(data: AppData): EditablePizzaRecipe {
   return {
     name: "",
     description: "",
+    doughTypeId: data.doughs[0]?.id ?? "",
     sauceLine: null,
     primaryCheeseLine: createEmptyEditableLine(data),
     secondaryCheeseLines: [],
@@ -101,6 +109,7 @@ export function pizzaToEditable(data: AppData, pizza: PizzaRecipe): EditablePizz
     id: pizza.id,
     name: pizza.name,
     description: pizza.description ?? "",
+    doughTypeId: pizza.doughTypeId ?? data.doughs[0]?.id ?? "",
     sauceLine: pizza.sauceLine ? toEditableRecipeLine(data, pizza.sauceLine) : null,
     primaryCheeseLine: toEditableRecipeLine(data, pizza.primaryCheeseLine),
     secondaryCheeseLines: pizza.secondaryCheeseLines.map((line) => toEditableRecipeLine(data, line)),
@@ -147,6 +156,7 @@ export function editableToPizza(editable: EditablePizzaRecipe): PizzaRecipe {
     id: editable.id || makeId("pizza"),
     name: editable.name.trim(),
     description: editable.description.trim() || undefined,
+    doughTypeId: editable.doughTypeId || undefined,
     sauceLine:
       editable.sauceLine && editable.sauceLine.itemId
         ? fromEditableRecipeLine(editable.sauceLine)
