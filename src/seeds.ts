@@ -1,5 +1,6 @@
 import type {
   AppData,
+  DoughRecord,
   Id,
   LibraryCategory,
   LibraryItem,
@@ -38,6 +39,7 @@ export const seededSizes: SizeRecord[] = [
     shape: "round",
     diameterInches: 13,
     surfaceAreaSqIn: Math.PI * Math.pow(13 / 2, 2),
+    defaultServings: 3,
   },
   {
     id: "size_15_round",
@@ -45,6 +47,7 @@ export const seededSizes: SizeRecord[] = [
     shape: "round",
     diameterInches: 15,
     surfaceAreaSqIn: Math.PI * Math.pow(15 / 2, 2),
+    defaultServings: 4,
   },
   {
     id: "size_10x14_rect",
@@ -53,6 +56,16 @@ export const seededSizes: SizeRecord[] = [
     lengthInches: 14,
     widthInches: 10,
     surfaceAreaSqIn: 140,
+    defaultServings: 3.5,
+  },
+];
+
+export const seededDoughs: DoughRecord[] = [
+  {
+    id: "dough_ny",
+    name: "NY Style",
+    defaultMiseEnPlace: "Scale and ball dough",
+    notes: "Default testing dough",
   },
 ];
 
@@ -104,6 +117,7 @@ const diavolaPizza: PizzaRecipe = {
   id: "pizza_diavola",
   name: "Diavola",
   description: "Tomato sauce, mozzarella, pepperoni, green olives, and pizza shake.",
+  doughTypeId: "dough_ny",
   sauceLine: makeRecipeLine("sauce_pizza", [
     { sizeId: "size_13_round", value: 5, unitId: "unit_fl_oz" },
     { sizeId: "size_15_round", value: 6.5, unitId: "unit_fl_oz" },
@@ -141,11 +155,7 @@ const diavolaPizza: PizzaRecipe = {
   postBakeCheeseLines: [],
   postBakeToppingLines: [],
   postBakeSeasoningLines: [],
-  servingsBySize: makeAmounts([
-    { sizeId: "size_13_round", value: 3, unitId: "unit_each" },
-    { sizeId: "size_15_round", value: 4, unitId: "unit_each" },
-    { sizeId: "size_10x14_rect", value: 3.5, unitId: "unit_each" },
-  ]),
+  servingsBySize: [],
   doughWeightBySize: makeAmounts([
     { sizeId: "size_13_round", value: 16, unitId: "unit_oz" },
     { sizeId: "size_15_round", value: 20, unitId: "unit_oz" },
@@ -159,6 +169,7 @@ const greekPizza: PizzaRecipe = {
   name: "Greek",
   description:
     "Lemon garlic yogurt, mozzarella, chicken roulade, olives, pizza shake, feta, and spinach.",
+  doughTypeId: "dough_ny",
   sauceLine: makeRecipeLine("sauce_yogurt", [
     { sizeId: "size_13_round", value: 4, unitId: "unit_fl_oz" },
     { sizeId: "size_15_round", value: 5.25, unitId: "unit_fl_oz" },
@@ -220,11 +231,7 @@ const greekPizza: PizzaRecipe = {
     ),
   ],
   postBakeSeasoningLines: [],
-  servingsBySize: makeAmounts([
-    { sizeId: "size_13_round", value: 3, unitId: "unit_each" },
-    { sizeId: "size_15_round", value: 4, unitId: "unit_each" },
-    { sizeId: "size_10x14_rect", value: 3.5, unitId: "unit_each" },
-  ]),
+  servingsBySize: [],
   doughWeightBySize: makeAmounts([
     { sizeId: "size_13_round", value: 16, unitId: "unit_oz" },
     { sizeId: "size_15_round", value: 20, unitId: "unit_oz" },
@@ -255,6 +262,7 @@ export const initialAppData: AppData = {
   seasonings: [
     makeLibraryItem("season_pizza_shake", "seasonings", "Pizza shake", "loc_pantry", "unit_to_taste"),
   ],
+  doughs: seededDoughs,
   pizzas: [diavolaPizza, greekPizza],
   activeParty: {
     id: makeId("party"),
