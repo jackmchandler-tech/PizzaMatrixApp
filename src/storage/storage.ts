@@ -5,6 +5,7 @@ import type {
   LibraryItem,
   PizzaPlanRow,
   PizzaRecipe,
+  RecipeLine,
   SizeRecord,
 } from "../types";
 import { initialAppData, makeId } from "../seeds";
@@ -31,7 +32,7 @@ function normalizeAmountBySizeRows(
         value: typeof r.value === "number" ? r.value : undefined,
         unitId: typeof r.unitId === "string" ? r.unitId : undefined,
         isDirect: typeof r.isDirect === "boolean" ? r.isDirect : true,
-      } satisfies AmountBySize;
+      } as AmountBySize;
     })
     .filter((row): row is AmountBySize => Boolean(row && row.sizeId));
 }
@@ -66,7 +67,7 @@ function normalizeLibraryItems(
           typeof r.notes === "string" && r.notes.trim()
             ? r.notes.trim()
             : undefined,
-      } satisfies LibraryItem;
+      } as LibraryItem;
     })
     .filter((item): item is LibraryItem => Boolean(item));
 }
@@ -92,7 +93,7 @@ function normalizeDoughs(doughs: unknown, fallback: DoughRecord[]): DoughRecord[
             : undefined,
         notes:
           typeof r.notes === "string" && r.notes.trim() ? r.notes.trim() : undefined,
-      } satisfies DoughRecord;
+      } as DoughRecord;
     })
     .filter((item): item is DoughRecord => Boolean(item));
 }
@@ -135,15 +136,12 @@ function normalizeSizes(rawSizes: unknown, seedSizes: SizeRecord[]): SizeRecord[
           typeof r.defaultServings === "number"
             ? r.defaultServings
             : seed?.defaultServings,
-      } satisfies SizeRecord;
+      } as SizeRecord;
     })
     .filter((item): item is SizeRecord => Boolean(item));
 }
 
-function normalizeRecipeLine(
-  raw: unknown,
-  sizes: SizeRecord[],
-) {
+function normalizeRecipeLine(raw: unknown, sizes: SizeRecord[]): RecipeLine | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
 
@@ -163,11 +161,12 @@ function normalizeRecipeLine(
   };
 }
 
-function normalizeRecipeLineArray(raw: unknown, sizes: SizeRecord[]) {
+function normalizeRecipeLineArray(raw: unknown, sizes: SizeRecord[]): RecipeLine[] {
   if (!Array.isArray(raw)) return [];
+
   return raw
     .map((line) => normalizeRecipeLine(line, sizes))
-    .filter((line) => Boolean(line));
+    .filter((line): line is RecipeLine => line !== null);
 }
 
 function normalizePizzas(
@@ -179,46 +178,50 @@ function normalizePizzas(
 
   const fallbackDoughId = doughs[0]?.id;
 
-  return rawPizzas
-    .map((item) => {
-      if (!item || typeof item !== "object") return null;
-      const r = item as Record<string, unknown>;
+  const result: PizzaRecipe[] = [];
 
-      const name = typeof r.name === "string" ? r.name.trim() : "";
-      if (!name) return null;
+  for (const item of rawPizzas) {
+    if (!item || typeof item !== "object") continue;
+    const r = item as Record<string, unknown>;
 
-      const primaryCheeseLine = normalizeRecipeLine(r.primaryCheeseLine, sizes);
-      if (!primaryCheeseLine) return null;
+    const name = typeof r.name === "string" ? r.name.trim() : "";
+    if (!name) continue;
 
-      return {
-        id: typeof r.id === "string" ? r.id : makeId("pizza"),
-        name,
-        description:
-          typeof r.description === "string" && r.description.trim()
-            ? r.description.trim()
-            : undefined,
-        doughTypeId:
-          typeof r.doughTypeId === "string" && r.doughTypeId
-            ? r.doughTypeId
-            : fallbackDoughId,
-        sauceLine: normalizeRecipeLine(r.sauceLine, sizes),
-        primaryCheeseLine,
-        secondaryCheeseLines: normalizeRecipeLineArray(r.secondaryCheeseLines, sizes),
-        toppingLines: normalizeRecipeLineArray(r.toppingLines, sizes),
-        seasoningLines: normalizeRecipeLineArray(r.seasoningLines, sizes),
-        postBakeCheeseLines: normalizeRecipeLineArray(r.postBakeCheeseLines, sizes),
-        postBakeToppingLines: normalizeRecipeLineArray(r.postBakeToppingLines, sizes),
-        postBakeSeasoningLines: normalizeRecipeLineArray(
-          r.postBakeSeasoningLines,
-          sizes,
-        ),
-        servingsBySize: normalizeAmountBySizeRows(r.servingsBySize, sizes),
-        doughWeightBySize: normalizeAmountBySizeRows(r.doughWeightBySize, sizes),
-        notes:
-          typeof r.notes === "string" && r.notes.trim() ? r.notes.trim() : undefined,
-      } satisfies PizzaRecipe;
-    })
-    .filter((pizza): pizza is PizzaRecipe => Boolean(pizza));
+    const primaryCheeseLine = normalizeRecipeLine(r.primaryCheeseLine, sizes);
+    if (!primaryCheeseLine) continue;
+
+    const pizza: PizzaRecipe = {
+      id: typeof r.id === "string" ? r.id : makeId("pizza"),
+      name,
+      description:
+        typeof r.description === "string" && r.description.trim()
+          ? r.description.trim()
+          : undefined,
+      doughTypeId:
+        typeof r.doughTypeId === "string" && r.doughTypeId
+          ? r.doughTypeId
+          : fallbackDoughId,
+      sauceLine: normalizeRecipeLine(r.sauceLine, sizes),
+      primaryCheeseLine,
+      secondaryCheeseLines: normalizeRecipeLineArray(r.secondaryCheeseLines, sizes),
+      toppingLines: normalizeRecipeLineArray(r.toppingLines, sizes),
+      seasoningLines: normalizeRecipeLineArray(r.seasoningLines, sizes),
+      postBakeCheeseLines: normalizeRecipeLineArray(r.postBakeCheeseLines, sizes),
+      postBakeToppingLines: normalizeRecipeLineArray(r.postBakeToppingLines, sizes),
+      postBakeSeasoningLines: normalizeRecipeLineArray(
+        r.postBakeSeasoningLines,
+        sizes,
+      ),
+      servingsBySize: normalizeAmountBySizeRows(r.servingsBySize, sizes),
+      doughWeightBySize: normalizeAmountBySizeRows(r.doughWeightBySize, sizes),
+      notes:
+        typeof r.notes === "string" && r.notes.trim() ? r.notes.trim() : undefined,
+    };
+
+    result.push(pizza);
+  }
+
+  return result;
 }
 
 function normalizePlanRows(rawRows: unknown): PizzaPlanRow[] {
@@ -242,15 +245,20 @@ function normalizePlanRows(rawRows: unknown): PizzaPlanRow[] {
 
 export function normalizeAppData(raw: unknown): AppData {
   const seed = cloneInitialData();
-  const source = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  const source =
+    raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
 
   const sizes = normalizeSizes(source.sizes, seed.sizes);
   const doughs = normalizeDoughs(source.doughs, seed.doughs);
 
   const normalized: AppData = {
     version: typeof source.version === "number" ? source.version : seed.version,
-    locations: Array.isArray(source.locations) ? (source.locations as AppData["locations"]) : seed.locations,
-    units: Array.isArray(source.units) ? (source.units as AppData["units"]) : seed.units,
+    locations: Array.isArray(source.locations)
+      ? (source.locations as AppData["locations"])
+      : seed.locations,
+    units: Array.isArray(source.units)
+      ? (source.units as AppData["units"])
+      : seed.units,
     sizes,
     sauces: normalizeLibraryItems(source.sauces, "sauces"),
     cheeses: normalizeLibraryItems(source.cheeses, "cheeses"),
@@ -301,7 +309,9 @@ export function normalizeAppData(raw: unknown): AppData {
   if (normalized.toppings.length === 0) normalized.toppings = seed.toppings;
   if (normalized.seasonings.length === 0) normalized.seasonings = seed.seasonings;
   if (normalized.doughs.length === 0) normalized.doughs = seed.doughs;
-  if (normalized.activeParty.rows.length === 0) normalized.activeParty.rows = seed.activeParty.rows;
+  if (normalized.activeParty.rows.length === 0) {
+    normalized.activeParty.rows = seed.activeParty.rows;
+  }
 
   return normalized;
 }
