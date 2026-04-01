@@ -5,6 +5,7 @@ import type {
   LibraryCategory,
   LibraryItem,
   LocationRecord,
+  SizeRecord,
   UnitRecord,
   UnitTypeKind,
 } from "../types";
@@ -20,9 +21,10 @@ type SetupTab =
   | "cheeses"
   | "toppings"
   | "seasonings"
+  | "doughs"
+  | "sizes"
   | "locations"
-  | "units"
-  | "doughs";
+  | "units";
 
 function categoryLabel(category: LibraryCategory): string {
   if (category === "sauces") return "Sauces";
@@ -102,9 +104,7 @@ function collectIngredientUsage(
   }
 
   data.pizzas.forEach((pizza) => {
-    if (category === "sauces") {
-      track(pizza.sauceLine?.itemId, pizza.name);
-    }
+    if (category === "sauces") track(pizza.sauceLine?.itemId, pizza.name);
 
     if (category === "cheeses") {
       track(pizza.primaryCheeseLine.itemId, pizza.name);
@@ -179,12 +179,10 @@ function LibraryItemEditor({
   function removeItem(index: number) {
     const item = drafts[index];
     const usedBy = usageByItemId[item.id] ?? [];
-
     if (usedBy.length > 0) {
       alert(`Cannot remove "${item.name || "this item"}". It is used by: ${usedBy.join(", ")}`);
       return;
     }
-
     setDrafts((current) => current.filter((_, itemIndex) => itemIndex !== index));
   }
 
@@ -301,12 +299,10 @@ function DoughEditor({
   function removeDough(index: number) {
     const item = drafts[index];
     const usedBy = usageByDoughId[item.id] ?? [];
-
     if (usedBy.length > 0) {
       alert(`Cannot remove "${item.name || "this dough"}". It is used by: ${usedBy.join(", ")}`);
       return;
     }
-
     setDrafts((current) => current.filter((_, itemIndex) => itemIndex !== index));
   }
 
@@ -377,6 +373,80 @@ function DoughEditor({
               </tr>
             );
           })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function SizeEditor({
+  sizes,
+  onSave,
+}: {
+  sizes: SizeRecord[];
+  onSave: (sizes: SizeRecord[]) => void;
+}) {
+  const [drafts, setDrafts] = useState<SizeRecord[]>(sizes);
+
+  useEffect(() => {
+    setDrafts(sizes);
+  }, [sizes]);
+
+  function updateDraft(index: number, updates: Partial<SizeRecord>) {
+    setDrafts((current) =>
+      current.map((item, itemIndex) => (itemIndex === index ? { ...item, ...updates } : item)),
+    );
+  }
+
+  function saveAll() {
+    const cleaned = drafts.map((item) => ({
+      ...item,
+      name: item.name.trim(),
+      defaultServings:
+        typeof item.defaultServings === "number" && Number.isFinite(item.defaultServings)
+          ? item.defaultServings
+          : undefined,
+    }));
+
+    onSave(cleaned);
+    setDrafts(cleaned);
+  }
+
+  return (
+    <div style={{ border: "1px solid #ccc", padding: 12 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, gap: 8, flexWrap: "wrap" }}>
+        <h3 style={{ margin: 0 }}>Sizes</h3>
+        <button type="button" onClick={saveAll}>Save Sizes</button>
+      </div>
+
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+        <thead>
+          <tr>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Name</th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Shape</th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Default servings</th>
+          </tr>
+        </thead>
+        <tbody>
+          {drafts.map((item, index) => (
+            <tr key={item.id}>
+              <td style={{ border: "1px solid #ccc", padding: 6 }}>{item.name}</td>
+              <td style={{ border: "1px solid #ccc", padding: 6 }}>{item.shape}</td>
+              <td style={{ border: "1px solid #ccc", padding: 6 }}>
+                <input
+                  type="number"
+                  step="0.25"
+                  value={item.defaultServings ?? ""}
+                  onChange={(e) =>
+                    updateDraft(index, {
+                      defaultServings:
+                        e.target.value === "" ? undefined : Number(e.target.value),
+                    })
+                  }
+                />
+              </td>
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>
@@ -537,15 +607,17 @@ export function LibraryEditor({ data, onChangeData }: LibraryEditorProps) {
   const [currentTab, setCurrentTab] = useState<SetupTab>("sauces");
 
   const tabButtons = useMemo(
-    () => [
-      { id: "sauces", label: "Sauces" },
-      { id: "cheeses", label: "Cheeses" },
-      { id: "toppings", label: "Toppings" },
-      { id: "seasonings", label: "Seasonings" },
-      { id: "doughs", label: "Doughs" },
-      { id: "locations", label: "Locations" },
-      { id: "units", label: "Units" },
-    ] as const,
+    () =>
+      [
+        { id: "sauces", label: "Sauces" },
+        { id: "cheeses", label: "Cheeses" },
+        { id: "toppings", label: "Toppings" },
+        { id: "seasonings", label: "Seasonings" },
+        { id: "doughs", label: "Doughs" },
+        { id: "sizes", label: "Sizes" },
+        { id: "locations", label: "Locations" },
+        { id: "units", label: "Units" },
+      ] as const,
     [],
   );
 
@@ -572,18 +644,35 @@ export function LibraryEditor({ data, onChangeData }: LibraryEditorProps) {
       </div>
 
       {currentTab === "locations" ? (
-        <LocationEditor locations={data.locations} onSave={(locations) => onChangeData((current) => ({ ...current, locations }))} />
+        <LocationEditor
+          locations={data.locations}
+          onSave={(locations) => onChangeData((current) => ({ ...current, locations }))}
+        />
       ) : currentTab === "units" ? (
-        <UnitEditor units={data.units} onSave={(units) => onChangeData((current) => ({ ...current, units }))} />
+        <UnitEditor
+          units={data.units}
+          onSave={(units) => onChangeData((current) => ({ ...current, units }))}
+        />
       ) : currentTab === "doughs" ? (
-        <DoughEditor data={data} doughs={data.doughs} onSave={(doughs) => onChangeData((current) => ({ ...current, doughs }))} />
+        <DoughEditor
+          data={data}
+          doughs={data.doughs}
+          onSave={(doughs) => onChangeData((current) => ({ ...current, doughs }))}
+        />
+      ) : currentTab === "sizes" ? (
+        <SizeEditor
+          sizes={data.sizes}
+          onSave={(sizes) => onChangeData((current) => ({ ...current, sizes }))}
+        />
       ) : (
         <LibraryItemEditor
           key={currentTab}
           data={data}
           category={currentTab}
           items={getCollection(data, currentTab)}
-          onSaveItems={(items) => onChangeData((current) => setCollection(current, currentTab, items))}
+          onSaveItems={(items) =>
+            onChangeData((current) => setCollection(current, currentTab, items))
+          }
         />
       )}
     </div>
