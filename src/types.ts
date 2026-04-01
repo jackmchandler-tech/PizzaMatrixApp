@@ -28,6 +28,7 @@ export interface SizeRecord {
   widthInches?: number;
   surfaceAreaSqIn: number;
   defaultServings?: number;
+  defaultDoughWeight?: number;
 }
 
 export interface LibraryItem {
