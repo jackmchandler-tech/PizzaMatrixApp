@@ -203,6 +203,58 @@ function RecipeLineEditor({
   );
 }
 
+function LineArraySection({
+  data,
+  title,
+  buttonLabel,
+  category,
+  lines,
+  onChange,
+}: {
+  data: AppData;
+  title: string;
+  buttonLabel: string;
+  category: LibraryCategory;
+  lines: EditableRecipeLine[];
+  onChange: (lines: EditableRecipeLine[]) => void;
+}) {
+  function updateLineArray(index: number, nextLine: EditableRecipeLine) {
+    onChange(lines.map((line, lineIndex) => (lineIndex === index ? nextLine : line)));
+  }
+
+  function removeLineArray(index: number) {
+    onChange(lines.filter((_, lineIndex) => lineIndex !== index));
+  }
+
+  return (
+    <div style={{ border: "1px solid #ccc", padding: 12, marginBottom: 16 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+        <h3 style={{ margin: 0 }}>{title}</h3>
+        <button
+          type="button"
+          onClick={() => onChange([...lines, createEmptyEditableLine(data)])}
+        >
+          {buttonLabel}
+        </button>
+      </div>
+
+      {lines.map((line, index) => (
+        <RecipeLineEditor
+          key={line.id}
+          data={data}
+          title={`${title} ${index + 1}`}
+          category={category}
+          line={line}
+          onChange={(nextLine) => updateLineArray(index, nextLine)}
+          onRemove={() => removeLineArray(index)}
+        />
+      ))}
+
+      {lines.length === 0 ? <div>None defined.</div> : null}
+    </div>
+  );
+}
+
 export function PizzaEditor({ data, onSavePizza, onDeletePizza }: PizzaEditorProps) {
   const [selectedPizzaId, setSelectedPizzaId] = useState("");
   const [draft, setDraft] = useState<EditablePizzaRecipe>(() => createEmptyEditablePizza(data));
@@ -259,18 +311,6 @@ export function PizzaEditor({ data, onSavePizza, onDeletePizza }: PizzaEditorPro
     startNewPizza();
   }
 
-  function updateLineArray(
-    lines: EditableRecipeLine[],
-    index: number,
-    nextLine: EditableRecipeLine,
-  ) {
-    return lines.map((line, lineIndex) => (lineIndex === index ? nextLine : line));
-  }
-
-  function removeLineArray(lines: EditableRecipeLine[], index: number) {
-    return lines.filter((_, lineIndex) => lineIndex !== index);
-  }
-
   return (
     <div>
       <div style={{ border: "1px solid #ccc", padding: 12, marginBottom: 16 }}>
@@ -309,7 +349,7 @@ export function PizzaEditor({ data, onSavePizza, onDeletePizza }: PizzaEditorPro
           </label>
         </div>
 
-        <div style={{ marginTop: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
           <label>
             <div>Description</div>
             <input
@@ -318,6 +358,21 @@ export function PizzaEditor({ data, onSavePizza, onDeletePizza }: PizzaEditorPro
               onChange={(e) => setDraft({ ...draft, description: e.target.value })}
               style={{ width: "100%" }}
             />
+          </label>
+
+          <label>
+            <div>Dough type</div>
+            <select
+              value={draft.doughTypeId}
+              onChange={(e) => setDraft({ ...draft, doughTypeId: e.target.value })}
+            >
+              <option value="">Select dough</option>
+              {data.doughs.map((dough) => (
+                <option key={dough.id} value={dough.id}>
+                  {dough.name}
+                </option>
+              ))}
+            </select>
           </label>
         </div>
 
@@ -336,7 +391,7 @@ export function PizzaEditor({ data, onSavePizza, onDeletePizza }: PizzaEditorPro
 
       <div style={{ border: "1px solid #ccc", padding: 12, marginBottom: 16 }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-          <h3>Sauce</h3>
+          <h3 style={{ margin: 0 }}>Sauce</h3>
           <button
             type="button"
             onClick={() =>
@@ -365,7 +420,7 @@ export function PizzaEditor({ data, onSavePizza, onDeletePizza }: PizzaEditorPro
       </div>
 
       <div style={{ border: "1px solid #ccc", padding: 12, marginBottom: 16 }}>
-        <h3>Primary Cheese</h3>
+        <h3 style={{ marginTop: 0 }}>Primary Cheese</h3>
         <RecipeLineEditor
           data={data}
           title="Primary Cheese"
@@ -376,83 +431,59 @@ export function PizzaEditor({ data, onSavePizza, onDeletePizza }: PizzaEditorPro
         />
       </div>
 
-      <div style={{ border: "1px solid #ccc", padding: 12, marginBottom: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-          <h3>Toppings</h3>
-          <button
-            type="button"
-            onClick={() =>
-              setDraft({
-                ...draft,
-                toppingLines: [...draft.toppingLines, createEmptyEditableLine(data)],
-              })
-            }
-          >
-            Add Topping
-          </button>
-        </div>
+      <LineArraySection
+        data={data}
+        title="Secondary Cheese"
+        buttonLabel="Add Secondary Cheese"
+        category="cheeses"
+        lines={draft.secondaryCheeseLines}
+        onChange={(lines) => setDraft({ ...draft, secondaryCheeseLines: lines })}
+      />
 
-        {draft.toppingLines.map((line, index) => (
-          <RecipeLineEditor
-            key={line.id}
-            data={data}
-            title={`Topping ${index + 1}`}
-            category="toppings"
-            line={line}
-            onChange={(nextLine) =>
-              setDraft({
-                ...draft,
-                toppingLines: updateLineArray(draft.toppingLines, index, nextLine),
-              })
-            }
-            onRemove={() =>
-              setDraft({
-                ...draft,
-                toppingLines: removeLineArray(draft.toppingLines, index),
-              })
-            }
-          />
-        ))}
-      </div>
+      <LineArraySection
+        data={data}
+        title="Topping"
+        buttonLabel="Add Topping"
+        category="toppings"
+        lines={draft.toppingLines}
+        onChange={(lines) => setDraft({ ...draft, toppingLines: lines })}
+      />
 
-      <div style={{ border: "1px solid #ccc", padding: 12, marginBottom: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-          <h3>Seasonings</h3>
-          <button
-            type="button"
-            onClick={() =>
-              setDraft({
-                ...draft,
-                seasoningLines: [...draft.seasoningLines, createEmptyEditableLine(data)],
-              })
-            }
-          >
-            Add Seasoning
-          </button>
-        </div>
+      <LineArraySection
+        data={data}
+        title="Seasoning"
+        buttonLabel="Add Seasoning"
+        category="seasonings"
+        lines={draft.seasoningLines}
+        onChange={(lines) => setDraft({ ...draft, seasoningLines: lines })}
+      />
 
-        {draft.seasoningLines.map((line, index) => (
-          <RecipeLineEditor
-            key={line.id}
-            data={data}
-            title={`Seasoning ${index + 1}`}
-            category="seasonings"
-            line={line}
-            onChange={(nextLine) =>
-              setDraft({
-                ...draft,
-                seasoningLines: updateLineArray(draft.seasoningLines, index, nextLine),
-              })
-            }
-            onRemove={() =>
-              setDraft({
-                ...draft,
-                seasoningLines: removeLineArray(draft.seasoningLines, index),
-              })
-            }
-          />
-        ))}
-      </div>
+      <LineArraySection
+        data={data}
+        title="Post-bake Cheese"
+        buttonLabel="Add Post-bake Cheese"
+        category="cheeses"
+        lines={draft.postBakeCheeseLines}
+        onChange={(lines) => setDraft({ ...draft, postBakeCheeseLines: lines })}
+      />
+
+      <LineArraySection
+        data={data}
+        title="Post-bake Topping"
+        buttonLabel="Add Post-bake Topping"
+        category="toppings"
+        lines={draft.postBakeToppingLines}
+        onChange={(lines) => setDraft({ ...draft, postBakeToppingLines: lines })}
+      />
+
+      <LineArraySection
+        data={data}
+        title="Post-bake Seasoning"
+        buttonLabel="Add Post-bake Seasoning"
+        category="seasonings"
+        lines={draft.postBakeSeasoningLines}
+        onChange={(lines) => setDraft({ ...draft, postBakeSeasoningLines: lines })}
+      />
 
       <div style={{ border: "1px solid #ccc", padding: 12, marginBottom: 16 }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
@@ -460,7 +491,7 @@ export function PizzaEditor({ data, onSavePizza, onDeletePizza }: PizzaEditorPro
             data={data}
             rows={draft.servingsBySize}
             onChange={(rows) => setDraft({ ...draft, servingsBySize: rows })}
-            label="Servings by size"
+            label="Servings by size (blank uses size default)"
           />
           <AmountGrid
             data={data}
