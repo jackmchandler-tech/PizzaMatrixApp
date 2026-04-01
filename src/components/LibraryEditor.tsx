@@ -379,6 +379,30 @@ function DoughEditor({
   );
 }
 
+function blankSize(): SizeRecord {
+  return {
+    id: makeId("size"),
+    name: "",
+    shape: "round",
+    surfaceAreaSqIn: 0,
+    defaultServings: undefined,
+    defaultDoughWeight: undefined,
+  };
+}
+
+function calcSurfaceArea(size: SizeRecord): number {
+  if (size.shape === "round") {
+    const diameter = size.diameterInches ?? 0;
+    if (diameter <= 0) return 0;
+    return Math.PI * Math.pow(diameter / 2, 2);
+  }
+
+  const length = size.lengthInches ?? 0;
+  const width = size.widthInches ?? 0;
+  if (length <= 0 || width <= 0) return 0;
+  return length * width;
+}
+
 function SizeEditor({
   sizes,
   onSave,
@@ -394,19 +418,39 @@ function SizeEditor({
 
   function updateDraft(index: number, updates: Partial<SizeRecord>) {
     setDrafts((current) =>
-      current.map((item, itemIndex) => (itemIndex === index ? { ...item, ...updates } : item)),
+      current.map((item, itemIndex) => {
+        if (itemIndex !== index) return item;
+        const next = { ...item, ...updates };
+        next.surfaceAreaSqIn = calcSurfaceArea(next);
+        return next;
+      }),
     );
   }
 
+  function addSize() {
+    setDrafts((current) => [...current, blankSize()]);
+  }
+
+  function removeSize(index: number) {
+    setDrafts((current) => current.filter((_, itemIndex) => itemIndex !== index));
+  }
+
   function saveAll() {
-    const cleaned = drafts.map((item) => ({
-      ...item,
-      name: item.name.trim(),
-      defaultServings:
-        typeof item.defaultServings === "number" && Number.isFinite(item.defaultServings)
-          ? item.defaultServings
-          : undefined,
-    }));
+    const cleaned = drafts
+      .map((item) => ({
+        ...item,
+        name: item.name.trim(),
+        surfaceAreaSqIn: calcSurfaceArea(item),
+        defaultServings:
+          typeof item.defaultServings === "number" && Number.isFinite(item.defaultServings)
+            ? item.defaultServings
+            : undefined,
+        defaultDoughWeight:
+          typeof item.defaultDoughWeight === "number" && Number.isFinite(item.defaultDoughWeight)
+            ? item.defaultDoughWeight
+            : undefined,
+      }))
+      .filter((item) => item.name && item.surfaceAreaSqIn > 0);
 
     onSave(cleaned);
     setDrafts(cleaned);
@@ -414,9 +458,24 @@ function SizeEditor({
 
   return (
     <div style={{ border: "1px solid #ccc", padding: 12 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, gap: 8, flexWrap: "wrap" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          marginBottom: 12,
+          gap: 8,
+          flexWrap: "wrap",
+        }}
+      >
         <h3 style={{ margin: 0 }}>Sizes</h3>
-        <button type="button" onClick={saveAll}>Save Sizes</button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button type="button" onClick={addSize}>
+            Add Size
+          </button>
+          <button type="button" onClick={saveAll}>
+            Save Sizes
+          </button>
+        </div>
       </div>
 
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
@@ -424,14 +483,80 @@ function SizeEditor({
           <tr>
             <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Name</th>
             <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Shape</th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Diameter</th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Length</th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Width</th>
             <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Default servings</th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Default dough wt</th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Area</th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Remove</th>
           </tr>
         </thead>
         <tbody>
           {drafts.map((item, index) => (
             <tr key={item.id}>
-              <td style={{ border: "1px solid #ccc", padding: 6 }}>{item.name}</td>
-              <td style={{ border: "1px solid #ccc", padding: 6 }}>{item.shape}</td>
+              <td style={{ border: "1px solid #ccc", padding: 6 }}>
+                <input
+                  type="text"
+                  value={item.name}
+                  onChange={(e) => updateDraft(index, { name: e.target.value })}
+                />
+              </td>
+              <td style={{ border: "1px solid #ccc", padding: 6 }}>
+                <select
+                  value={item.shape}
+                  onChange={(e) =>
+                    updateDraft(index, {
+                      shape: e.target.value as SizeRecord["shape"],
+                      diameterInches: e.target.value === "round" ? item.diameterInches : undefined,
+                      lengthInches: e.target.value === "rectangle" ? item.lengthInches : undefined,
+                      widthInches: e.target.value === "rectangle" ? item.widthInches : undefined,
+                    })
+                  }
+                >
+                  <option value="round">round</option>
+                  <option value="rectangle">rectangle</option>
+                </select>
+              </td>
+              <td style={{ border: "1px solid #ccc", padding: 6 }}>
+                <input
+                  type="number"
+                  step="0.25"
+                  value={item.diameterInches ?? ""}
+                  disabled={item.shape !== "round"}
+                  onChange={(e) =>
+                    updateDraft(index, {
+                      diameterInches: e.target.value === "" ? undefined : Number(e.target.value),
+                    })
+                  }
+                />
+              </td>
+              <td style={{ border: "1px solid #ccc", padding: 6 }}>
+                <input
+                  type="number"
+                  step="0.25"
+                  value={item.lengthInches ?? ""}
+                  disabled={item.shape !== "rectangle"}
+                  onChange={(e) =>
+                    updateDraft(index, {
+                      lengthInches: e.target.value === "" ? undefined : Number(e.target.value),
+                    })
+                  }
+                />
+              </td>
+              <td style={{ border: "1px solid #ccc", padding: 6 }}>
+                <input
+                  type="number"
+                  step="0.25"
+                  value={item.widthInches ?? ""}
+                  disabled={item.shape !== "rectangle"}
+                  onChange={(e) =>
+                    updateDraft(index, {
+                      widthInches: e.target.value === "" ? undefined : Number(e.target.value),
+                    })
+                  }
+                />
+              </td>
               <td style={{ border: "1px solid #ccc", padding: 6 }}>
                 <input
                   type="number"
@@ -439,11 +564,31 @@ function SizeEditor({
                   value={item.defaultServings ?? ""}
                   onChange={(e) =>
                     updateDraft(index, {
-                      defaultServings:
+                      defaultServings: e.target.value === "" ? undefined : Number(e.target.value),
+                    })
+                  }
+                />
+              </td>
+              <td style={{ border: "1px solid #ccc", padding: 6 }}>
+                <input
+                  type="number"
+                  step="0.25"
+                  value={item.defaultDoughWeight ?? ""}
+                  onChange={(e) =>
+                    updateDraft(index, {
+                      defaultDoughWeight:
                         e.target.value === "" ? undefined : Number(e.target.value),
                     })
                   }
                 />
+              </td>
+              <td style={{ border: "1px solid #ccc", padding: 6 }}>
+                {Math.round(calcSurfaceArea(item) * 100) / 100}
+              </td>
+              <td style={{ border: "1px solid #ccc", padding: 6 }}>
+                <button type="button" onClick={() => removeSize(index)}>
+                  Remove
+                </button>
               </td>
             </tr>
           ))}
