@@ -266,6 +266,10 @@ export function normalizeAppData(raw: unknown): AppData {
     seasonings: normalizeLibraryItems(source.seasonings, "seasonings"),
     doughs,
     pizzas: normalizePizzas(source.pizzas, sizes, doughs),
+    partyHistory: Array.isArray(source.partyHistory)
+      ? (source.partyHistory as PartyHistoryRecord[])
+      : [],
+    
     activeParty: {
       id:
         source.activeParty &&
@@ -301,6 +305,13 @@ export function normalizeAppData(raw: unknown): AppData {
         source.activeParty && typeof source.activeParty === "object"
           ? normalizePlanRows((source.activeParty as Record<string, unknown>).rows)
           : seed.activeParty.rows,
+
+      guestNames:
+        source.activeParty &&
+        typeof source.activeParty === "object" &&
+        typeof (source.activeParty as any).guestNames === "string"
+          ? (source.activeParty as any).guestNames
+          : "",
     },
   };
 
