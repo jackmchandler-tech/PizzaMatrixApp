@@ -27,6 +27,8 @@ export interface SizeRecord {
   lengthInches?: number;
   widthInches?: number;
   surfaceAreaSqIn: number;
+  defaultServings?: number;
+  defaultDoughWeight?: number;
 }
 
 export interface LibraryItem {
@@ -35,6 +37,14 @@ export interface LibraryItem {
   name: string;
   defaultLocationId?: Id;
   defaultUnitId?: Id;
+  defaultMiseEnPlace?: string;
+  notes?: string;
+}
+
+export interface DoughRecord {
+  id: Id;
+  name: string;
+  defaultLocationId?: Id;
   defaultMiseEnPlace?: string;
   notes?: string;
 }
@@ -58,6 +68,7 @@ export interface PizzaRecipe {
   id: Id;
   name: string;
   description?: string;
+  doughTypeId?: Id;
   sauceLine?: RecipeLine | null;
   primaryCheeseLine: RecipeLine;
   secondaryCheeseLines: RecipeLine[];
@@ -128,6 +139,7 @@ export interface AppData {
   cheeses: LibraryItem[];
   toppings: LibraryItem[];
   seasonings: LibraryItem[];
+  doughs: DoughRecord[];
   pizzas: PizzaRecipe[];
   activeParty: PartyPlan;
 }

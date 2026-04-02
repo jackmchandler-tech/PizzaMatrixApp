@@ -1,9 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   AppData,
+  DoughRecord,
   LibraryCategory,
   LibraryItem,
   LocationRecord,
+  SizeRecord,
   UnitRecord,
   UnitTypeKind,
 } from "../types";
@@ -19,6 +21,8 @@ type SetupTab =
   | "cheeses"
   | "toppings"
   | "seasonings"
+  | "doughs"
+  | "sizes"
   | "locations"
   | "units";
 
@@ -77,6 +81,71 @@ function blankUnit(sortOrder: number): UnitRecord {
   };
 }
 
+function blankDough(): DoughRecord {
+  return {
+    id: makeId("dough"),
+    name: "",
+    defaultLocationId: undefined,
+    defaultMiseEnPlace: "",
+    notes: "",
+  };
+}
+
+function collectIngredientUsage(
+  data: AppData,
+  category: LibraryCategory,
+): Record<string, string[]> {
+  const usage = new Map<string, Set<string>>();
+
+  function track(itemId: string | undefined, pizzaName: string) {
+    if (!itemId) return;
+    if (!usage.has(itemId)) usage.set(itemId, new Set<string>());
+    usage.get(itemId)!.add(pizzaName);
+  }
+
+  data.pizzas.forEach((pizza) => {
+    if (category === "sauces") track(pizza.sauceLine?.itemId, pizza.name);
+
+    if (category === "cheeses") {
+      track(pizza.primaryCheeseLine.itemId, pizza.name);
+      pizza.secondaryCheeseLines.forEach((line) => track(line.itemId, pizza.name));
+      pizza.postBakeCheeseLines.forEach((line) => track(line.itemId, pizza.name));
+    }
+
+    if (category === "toppings") {
+      pizza.toppingLines.forEach((line) => track(line.itemId, pizza.name));
+      pizza.postBakeToppingLines.forEach((line) => track(line.itemId, pizza.name));
+    }
+
+    if (category === "seasonings") {
+      pizza.seasoningLines.forEach((line) => track(line.itemId, pizza.name));
+      pizza.postBakeSeasoningLines.forEach((line) => track(line.itemId, pizza.name));
+    }
+  });
+
+  const result: Record<string, string[]> = {};
+  usage.forEach((pizzaNames, itemId) => {
+    result[itemId] = Array.from(pizzaNames).sort();
+  });
+  return result;
+}
+
+function collectDoughUsage(data: AppData): Record<string, string[]> {
+  const usage = new Map<string, Set<string>>();
+
+  data.pizzas.forEach((pizza) => {
+    if (!pizza.doughTypeId) return;
+    if (!usage.has(pizza.doughTypeId)) usage.set(pizza.doughTypeId, new Set<string>());
+    usage.get(pizza.doughTypeId)!.add(pizza.name);
+  });
+
+  const result: Record<string, string[]> = {};
+  usage.forEach((pizzaNames, doughId) => {
+    result[doughId] = Array.from(pizzaNames).sort();
+  });
+  return result;
+}
+
 function LibraryItemEditor({
   data,
   category,
@@ -89,6 +158,11 @@ function LibraryItemEditor({
   onSaveItems: (items: LibraryItem[]) => void;
 }) {
   const [drafts, setDrafts] = useState<LibraryItem[]>(items);
+  const usageByItemId = useMemo(() => collectIngredientUsage(data, category), [data, category]);
+
+  useEffect(() => {
+    setDrafts(items);
+  }, [items, category]);
 
   function updateDraft(index: number, updates: Partial<LibraryItem>) {
     setDrafts((current) =>
@@ -103,6 +177,12 @@ function LibraryItemEditor({
   }
 
   function removeItem(index: number) {
+    const item = drafts[index];
+    const usedBy = usageByItemId[item.id] ?? [];
+    if (usedBy.length > 0) {
+      alert(`Cannot remove "${item.name || "this item"}". It is used by: ${usedBy.join(", ")}`);
+      return;
+    }
     setDrafts((current) => current.filter((_, itemIndex) => itemIndex !== index));
   }
 
@@ -110,6 +190,7 @@ function LibraryItemEditor({
     const cleaned = drafts
       .map((item) => ({
         ...item,
+        category,
         name: item.name.trim(),
         defaultMiseEnPlace: item.defaultMiseEnPlace?.trim() || undefined,
         notes: item.notes?.trim() || undefined,
@@ -124,6 +205,259 @@ function LibraryItemEditor({
 
   return (
     <div style={{ border: "1px solid #ccc", padding: 12 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, gap: 8, flexWrap: "wrap" }}>
+        <h3 style={{ margin: 0 }}>{categoryLabel(category)}</h3>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button type="button" onClick={addItem}>Add {categoryLabel(category).slice(0, -1)}</button>
+          <button type="button" onClick={saveAll}>Save {categoryLabel(category)}</button>
+        </div>
+      </div>
+
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+        <thead>
+          <tr>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Name</th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Location</th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Unit</th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Default mise en place</th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Notes</th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Used by pizzas</th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Remove</th>
+          </tr>
+        </thead>
+        <tbody>
+          {drafts.map((item, index) => {
+            const usedBy = usageByItemId[item.id] ?? [];
+            const isInUse = usedBy.length > 0;
+
+            return (
+              <tr key={item.id}>
+                <td style={{ border: "1px solid #ccc", padding: 6 }}>
+                  <input type="text" value={item.name} onChange={(e) => updateDraft(index, { name: e.target.value })} style={{ width: "100%" }} />
+                </td>
+                <td style={{ border: "1px solid #ccc", padding: 6 }}>
+                  <select value={item.defaultLocationId ?? ""} onChange={(e) => updateDraft(index, { defaultLocationId: e.target.value || undefined })} style={{ width: "100%" }}>
+                    <option value="">Select</option>
+                    {data.locations.map((location) => (
+                      <option key={location.id} value={location.id}>{location.name}</option>
+                    ))}
+                  </select>
+                </td>
+                <td style={{ border: "1px solid #ccc", padding: 6 }}>
+                  <select value={item.defaultUnitId ?? ""} onChange={(e) => updateDraft(index, { defaultUnitId: e.target.value || undefined })} style={{ width: "100%" }}>
+                    <option value="">Select</option>
+                    {data.units.map((unit) => (
+                      <option key={unit.id} value={unit.id}>{unit.name}</option>
+                    ))}
+                  </select>
+                </td>
+                <td style={{ border: "1px solid #ccc", padding: 6 }}>
+                  <input type="text" value={item.defaultMiseEnPlace ?? ""} onChange={(e) => updateDraft(index, { defaultMiseEnPlace: e.target.value })} style={{ width: "100%" }} />
+                </td>
+                <td style={{ border: "1px solid #ccc", padding: 6 }}>
+                  <input type="text" value={item.notes ?? ""} onChange={(e) => updateDraft(index, { notes: e.target.value })} style={{ width: "100%" }} />
+                </td>
+                <td style={{ border: "1px solid #ccc", padding: 6 }}>{usedBy.join(", ")}</td>
+                <td style={{ border: "1px solid #ccc", padding: 6 }}>
+                  <button type="button" onClick={() => removeItem(index)} disabled={isInUse}>Remove</button>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function DoughEditor({
+  data,
+  doughs,
+  onSave,
+}: {
+  data: AppData;
+  doughs: DoughRecord[];
+  onSave: (doughs: DoughRecord[]) => void;
+}) {
+  const [drafts, setDrafts] = useState<DoughRecord[]>(doughs);
+  const usageByDoughId = useMemo(() => collectDoughUsage(data), [data]);
+
+  useEffect(() => {
+    setDrafts(doughs);
+  }, [doughs]);
+
+  function updateDraft(index: number, updates: Partial<DoughRecord>) {
+    setDrafts((current) =>
+      current.map((item, itemIndex) => (itemIndex === index ? { ...item, ...updates } : item)),
+    );
+  }
+
+  function addDough() {
+    setDrafts((current) => [...current, blankDough()]);
+  }
+
+  function removeDough(index: number) {
+    const item = drafts[index];
+    const usedBy = usageByDoughId[item.id] ?? [];
+    if (usedBy.length > 0) {
+      alert(`Cannot remove "${item.name || "this dough"}". It is used by: ${usedBy.join(", ")}`);
+      return;
+    }
+    setDrafts((current) => current.filter((_, itemIndex) => itemIndex !== index));
+  }
+
+  function saveAll() {
+    const cleaned = drafts
+      .map((item) => ({
+        ...item,
+        name: item.name.trim(),
+        defaultMiseEnPlace: item.defaultMiseEnPlace?.trim() || undefined,
+        notes: item.notes?.trim() || undefined,
+        defaultLocationId: item.defaultLocationId || undefined,
+      }))
+      .filter((item) => item.name);
+
+    onSave(cleaned);
+    setDrafts(cleaned);
+  }
+
+  return (
+    <div style={{ border: "1px solid #ccc", padding: 12 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, gap: 8, flexWrap: "wrap" }}>
+        <h3 style={{ margin: 0 }}>Doughs</h3>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button type="button" onClick={addDough}>Add Dough</button>
+          <button type="button" onClick={saveAll}>Save Doughs</button>
+        </div>
+      </div>
+
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+        <thead>
+          <tr>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Name</th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Location</th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Default mise en place</th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Notes</th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Used by pizzas</th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Remove</th>
+          </tr>
+        </thead>
+        <tbody>
+          {drafts.map((item, index) => {
+            const usedBy = usageByDoughId[item.id] ?? [];
+            const isInUse = usedBy.length > 0;
+
+            return (
+              <tr key={item.id}>
+                <td style={{ border: "1px solid #ccc", padding: 6 }}>
+                  <input type="text" value={item.name} onChange={(e) => updateDraft(index, { name: e.target.value })} style={{ width: "100%" }} />
+                </td>
+                <td style={{ border: "1px solid #ccc", padding: 6 }}>
+                  <select value={item.defaultLocationId ?? ""} onChange={(e) => updateDraft(index, { defaultLocationId: e.target.value || undefined })} style={{ width: "100%" }}>
+                    <option value="">Select</option>
+                    {data.locations.map((location) => (
+                      <option key={location.id} value={location.id}>{location.name}</option>
+                    ))}
+                  </select>
+                </td>
+                <td style={{ border: "1px solid #ccc", padding: 6 }}>
+                  <input type="text" value={item.defaultMiseEnPlace ?? ""} onChange={(e) => updateDraft(index, { defaultMiseEnPlace: e.target.value })} style={{ width: "100%" }} />
+                </td>
+                <td style={{ border: "1px solid #ccc", padding: 6 }}>
+                  <input type="text" value={item.notes ?? ""} onChange={(e) => updateDraft(index, { notes: e.target.value })} style={{ width: "100%" }} />
+                </td>
+                <td style={{ border: "1px solid #ccc", padding: 6 }}>{usedBy.join(", ")}</td>
+                <td style={{ border: "1px solid #ccc", padding: 6 }}>
+                  <button type="button" onClick={() => removeDough(index)} disabled={isInUse}>Remove</button>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function blankSize(): SizeRecord {
+  return {
+    id: makeId("size"),
+    name: "",
+    shape: "round",
+    surfaceAreaSqIn: 0,
+    defaultServings: undefined,
+    defaultDoughWeight: undefined,
+  };
+}
+
+function calcSurfaceArea(size: SizeRecord): number {
+  if (size.shape === "round") {
+    const diameter = size.diameterInches ?? 0;
+    if (diameter <= 0) return 0;
+    return Math.PI * Math.pow(diameter / 2, 2);
+  }
+
+  const length = size.lengthInches ?? 0;
+  const width = size.widthInches ?? 0;
+  if (length <= 0 || width <= 0) return 0;
+  return length * width;
+}
+
+function SizeEditor({
+  sizes,
+  onSave,
+}: {
+  sizes: SizeRecord[];
+  onSave: (sizes: SizeRecord[]) => void;
+}) {
+  const [drafts, setDrafts] = useState<SizeRecord[]>(sizes);
+
+  useEffect(() => {
+    setDrafts(sizes);
+  }, [sizes]);
+
+  function updateDraft(index: number, updates: Partial<SizeRecord>) {
+    setDrafts((current) =>
+      current.map((item, itemIndex) => {
+        if (itemIndex !== index) return item;
+        const next = { ...item, ...updates };
+        next.surfaceAreaSqIn = calcSurfaceArea(next);
+        return next;
+      }),
+    );
+  }
+
+  function addSize() {
+    setDrafts((current) => [...current, blankSize()]);
+  }
+
+  function removeSize(index: number) {
+    setDrafts((current) => current.filter((_, itemIndex) => itemIndex !== index));
+  }
+
+  function saveAll() {
+    const cleaned = drafts
+      .map((item) => ({
+        ...item,
+        name: item.name.trim(),
+        surfaceAreaSqIn: calcSurfaceArea(item),
+        defaultServings:
+          typeof item.defaultServings === "number" && Number.isFinite(item.defaultServings)
+            ? item.defaultServings
+            : undefined,
+        defaultDoughWeight:
+          typeof item.defaultDoughWeight === "number" && Number.isFinite(item.defaultDoughWeight)
+            ? item.defaultDoughWeight
+            : undefined,
+      }))
+      .filter((item) => item.name && item.surfaceAreaSqIn > 0);
+
+    onSave(cleaned);
+    setDrafts(cleaned);
+  }
+
+  return (
+    <div style={{ border: "1px solid #ccc", padding: 12 }}>
       <div
         style={{
           display: "flex",
@@ -133,13 +467,13 @@ function LibraryItemEditor({
           flexWrap: "wrap",
         }}
       >
-        <h3 style={{ margin: 0 }}>{categoryLabel(category)}</h3>
+        <h3 style={{ margin: 0 }}>Sizes</h3>
         <div style={{ display: "flex", gap: 8 }}>
-          <button type="button" onClick={addItem}>
-            Add {categoryLabel(category).slice(0, -1)}
+          <button type="button" onClick={addSize}>
+            Add Size
           </button>
           <button type="button" onClick={saveAll}>
-            Save {categoryLabel(category)}
+            Save Sizes
           </button>
         </div>
       </div>
@@ -147,24 +481,15 @@ function LibraryItemEditor({
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
         <thead>
           <tr>
-            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>
-              Name
-            </th>
-            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>
-              Location
-            </th>
-            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>
-              Unit
-            </th>
-            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>
-              Default mise en place
-            </th>
-            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>
-              Notes
-            </th>
-            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>
-              Remove
-            </th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Name</th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Shape</th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Diameter</th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Length</th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Width</th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Default servings</th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Default dough wt</th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Area</th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Remove</th>
           </tr>
         </thead>
         <tbody>
@@ -175,67 +500,93 @@ function LibraryItemEditor({
                   type="text"
                   value={item.name}
                   onChange={(e) => updateDraft(index, { name: e.target.value })}
-                  style={{ width: "100%" }}
                 />
               </td>
               <td style={{ border: "1px solid #ccc", padding: 6 }}>
                 <select
-                  value={item.defaultLocationId ?? ""}
+                  value={item.shape}
                   onChange={(e) =>
                     updateDraft(index, {
-                      defaultLocationId: e.target.value || undefined,
+                      shape: e.target.value as SizeRecord["shape"],
+                      diameterInches: e.target.value === "round" ? item.diameterInches : undefined,
+                      lengthInches: e.target.value === "rectangle" ? item.lengthInches : undefined,
+                      widthInches: e.target.value === "rectangle" ? item.widthInches : undefined,
                     })
                   }
-                  style={{ width: "100%" }}
                 >
-                  <option value="">Select</option>
-                  {data.locations.map((location) => (
-                    <option key={location.id} value={location.id}>
-                      {location.name}
-                    </option>
-                  ))}
-                </select>
-              </td>
-              <td style={{ border: "1px solid #ccc", padding: 6 }}>
-                <select
-                  value={item.defaultUnitId ?? ""}
-                  onChange={(e) =>
-                    updateDraft(index, {
-                      defaultUnitId: e.target.value || undefined,
-                    })
-                  }
-                  style={{ width: "100%" }}
-                >
-                  <option value="">Select</option>
-                  {data.units.map((unit) => (
-                    <option key={unit.id} value={unit.id}>
-                      {unit.name}
-                    </option>
-                  ))}
+                  <option value="round">round</option>
+                  <option value="rectangle">rectangle</option>
                 </select>
               </td>
               <td style={{ border: "1px solid #ccc", padding: 6 }}>
                 <input
-                  type="text"
-                  value={item.defaultMiseEnPlace ?? ""}
+                  type="number"
+                  step="0.25"
+                  value={item.diameterInches ?? ""}
+                  disabled={item.shape !== "round"}
                   onChange={(e) =>
                     updateDraft(index, {
-                      defaultMiseEnPlace: e.target.value,
+                      diameterInches: e.target.value === "" ? undefined : Number(e.target.value),
                     })
                   }
-                  style={{ width: "100%" }}
                 />
               </td>
               <td style={{ border: "1px solid #ccc", padding: 6 }}>
                 <input
-                  type="text"
-                  value={item.notes ?? ""}
-                  onChange={(e) => updateDraft(index, { notes: e.target.value })}
-                  style={{ width: "100%" }}
+                  type="number"
+                  step="0.25"
+                  value={item.lengthInches ?? ""}
+                  disabled={item.shape !== "rectangle"}
+                  onChange={(e) =>
+                    updateDraft(index, {
+                      lengthInches: e.target.value === "" ? undefined : Number(e.target.value),
+                    })
+                  }
                 />
               </td>
               <td style={{ border: "1px solid #ccc", padding: 6 }}>
-                <button type="button" onClick={() => removeItem(index)}>
+                <input
+                  type="number"
+                  step="0.25"
+                  value={item.widthInches ?? ""}
+                  disabled={item.shape !== "rectangle"}
+                  onChange={(e) =>
+                    updateDraft(index, {
+                      widthInches: e.target.value === "" ? undefined : Number(e.target.value),
+                    })
+                  }
+                />
+              </td>
+              <td style={{ border: "1px solid #ccc", padding: 6 }}>
+                <input
+                  type="number"
+                  step="0.25"
+                  value={item.defaultServings ?? ""}
+                  onChange={(e) =>
+                    updateDraft(index, {
+                      defaultServings: e.target.value === "" ? undefined : Number(e.target.value),
+                    })
+                  }
+                />
+              </td>
+              <td style={{ border: "1px solid #ccc", padding: 6 }}>
+                <input
+                  type="number"
+                  step="0.25"
+                  value={item.defaultDoughWeight ?? ""}
+                  onChange={(e) =>
+                    updateDraft(index, {
+                      defaultDoughWeight:
+                        e.target.value === "" ? undefined : Number(e.target.value),
+                    })
+                  }
+                />
+              </td>
+              <td style={{ border: "1px solid #ccc", padding: 6 }}>
+                {Math.round(calcSurfaceArea(item) * 100) / 100}
+              </td>
+              <td style={{ border: "1px solid #ccc", padding: 6 }}>
+                <button type="button" onClick={() => removeSize(index)}>
                   Remove
                 </button>
               </td>
@@ -256,12 +607,12 @@ function LocationEditor({
 }) {
   const [drafts, setDrafts] = useState<LocationRecord[]>(locations);
 
+  useEffect(() => {
+    setDrafts(locations);
+  }, [locations]);
+
   function updateDraft(index: number, updates: Partial<LocationRecord>) {
-    setDrafts((current) =>
-      current.map((item, itemIndex) =>
-        itemIndex === index ? { ...item, ...updates } : item,
-      ),
-    );
+    setDrafts((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, ...updates } : item));
   }
 
   function addLocation() {
@@ -274,11 +625,7 @@ function LocationEditor({
 
   function saveAll() {
     const cleaned = drafts
-      .map((item, index) => ({
-        ...item,
-        name: item.name.trim(),
-        sortOrder: index + 1,
-      }))
+      .map((item, index) => ({ ...item, name: item.name.trim(), sortOrder: index + 1 }))
       .filter((item) => item.name);
 
     onSave(cleaned);
@@ -287,52 +634,29 @@ function LocationEditor({
 
   return (
     <div style={{ border: "1px solid #ccc", padding: 12 }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: 12,
-          gap: 8,
-          flexWrap: "wrap",
-        }}
-      >
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, gap: 8, flexWrap: "wrap" }}>
         <h3 style={{ margin: 0 }}>Locations</h3>
         <div style={{ display: "flex", gap: 8 }}>
-          <button type="button" onClick={addLocation}>
-            Add Location
-          </button>
-          <button type="button" onClick={saveAll}>
-            Save Locations
-          </button>
+          <button type="button" onClick={addLocation}>Add Location</button>
+          <button type="button" onClick={saveAll}>Save Locations</button>
         </div>
       </div>
 
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
         <thead>
           <tr>
-            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>
-              Name
-            </th>
-            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>
-              Remove
-            </th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Name</th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Remove</th>
           </tr>
         </thead>
         <tbody>
           {drafts.map((item, index) => (
             <tr key={item.id}>
               <td style={{ border: "1px solid #ccc", padding: 6 }}>
-                <input
-                  type="text"
-                  value={item.name}
-                  onChange={(e) => updateDraft(index, { name: e.target.value })}
-                  style={{ width: "100%" }}
-                />
+                <input type="text" value={item.name} onChange={(e) => updateDraft(index, { name: e.target.value })} style={{ width: "100%" }} />
               </td>
               <td style={{ border: "1px solid #ccc", padding: 6 }}>
-                <button type="button" onClick={() => removeLocation(index)}>
-                  Remove
-                </button>
+                <button type="button" onClick={() => removeLocation(index)}>Remove</button>
               </td>
             </tr>
           ))}
@@ -351,12 +675,12 @@ function UnitEditor({
 }) {
   const [drafts, setDrafts] = useState<UnitRecord[]>(units);
 
+  useEffect(() => {
+    setDrafts(units);
+  }, [units]);
+
   function updateDraft(index: number, updates: Partial<UnitRecord>) {
-    setDrafts((current) =>
-      current.map((item, itemIndex) =>
-        itemIndex === index ? { ...item, ...updates } : item,
-      ),
-    );
+    setDrafts((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, ...updates } : item));
   }
 
   function addUnit() {
@@ -369,12 +693,7 @@ function UnitEditor({
 
   function saveAll() {
     const cleaned = drafts
-      .map((item, index) => ({
-        ...item,
-        name: item.name.trim(),
-        symbol: item.symbol.trim(),
-        sortOrder: index + 1,
-      }))
+      .map((item, index) => ({ ...item, name: item.name.trim(), symbol: item.symbol.trim(), sortOrder: index + 1 }))
       .filter((item) => item.name);
 
     onSave(cleaned);
@@ -383,72 +702,34 @@ function UnitEditor({
 
   return (
     <div style={{ border: "1px solid #ccc", padding: 12 }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: 12,
-          gap: 8,
-          flexWrap: "wrap",
-        }}
-      >
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, gap: 8, flexWrap: "wrap" }}>
         <h3 style={{ margin: 0 }}>Units</h3>
         <div style={{ display: "flex", gap: 8 }}>
-          <button type="button" onClick={addUnit}>
-            Add Unit
-          </button>
-          <button type="button" onClick={saveAll}>
-            Save Units
-          </button>
+          <button type="button" onClick={addUnit}>Add Unit</button>
+          <button type="button" onClick={saveAll}>Save Units</button>
         </div>
       </div>
 
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
         <thead>
           <tr>
-            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>
-              Name
-            </th>
-            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>
-              Symbol
-            </th>
-            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>
-              Kind
-            </th>
-            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>
-              Remove
-            </th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Name</th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Symbol</th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Kind</th>
+            <th style={{ border: "1px solid #ccc", padding: 6, textAlign: "left" }}>Remove</th>
           </tr>
         </thead>
         <tbody>
           {drafts.map((item, index) => (
             <tr key={item.id}>
               <td style={{ border: "1px solid #ccc", padding: 6 }}>
-                <input
-                  type="text"
-                  value={item.name}
-                  onChange={(e) => updateDraft(index, { name: e.target.value })}
-                  style={{ width: "100%" }}
-                />
+                <input type="text" value={item.name} onChange={(e) => updateDraft(index, { name: e.target.value })} style={{ width: "100%" }} />
               </td>
               <td style={{ border: "1px solid #ccc", padding: 6 }}>
-                <input
-                  type="text"
-                  value={item.symbol}
-                  onChange={(e) => updateDraft(index, { symbol: e.target.value })}
-                  style={{ width: "100%" }}
-                />
+                <input type="text" value={item.symbol} onChange={(e) => updateDraft(index, { symbol: e.target.value })} style={{ width: "100%" }} />
               </td>
               <td style={{ border: "1px solid #ccc", padding: 6 }}>
-                <select
-                  value={item.kind}
-                  onChange={(e) =>
-                    updateDraft(index, {
-                      kind: e.target.value as UnitTypeKind,
-                    })
-                  }
-                  style={{ width: "100%" }}
-                >
+                <select value={item.kind} onChange={(e) => updateDraft(index, { kind: e.target.value as UnitTypeKind })} style={{ width: "100%" }}>
                   <option value="mass">mass</option>
                   <option value="volume">volume</option>
                   <option value="count">count</option>
@@ -457,9 +738,7 @@ function UnitEditor({
                 </select>
               </td>
               <td style={{ border: "1px solid #ccc", padding: 6 }}>
-                <button type="button" onClick={() => removeUnit(index)}>
-                  Remove
-                </button>
+                <button type="button" onClick={() => removeUnit(index)}>Remove</button>
               </td>
             </tr>
           ))}
@@ -473,14 +752,17 @@ export function LibraryEditor({ data, onChangeData }: LibraryEditorProps) {
   const [currentTab, setCurrentTab] = useState<SetupTab>("sauces");
 
   const tabButtons = useMemo(
-    () => [
-      { id: "sauces", label: "Sauces" },
-      { id: "cheeses", label: "Cheeses" },
-      { id: "toppings", label: "Toppings" },
-      { id: "seasonings", label: "Seasonings" },
-      { id: "locations", label: "Locations" },
-      { id: "units", label: "Units" },
-    ] as const,
+    () =>
+      [
+        { id: "sauces", label: "Sauces" },
+        { id: "cheeses", label: "Cheeses" },
+        { id: "toppings", label: "Toppings" },
+        { id: "seasonings", label: "Seasonings" },
+        { id: "doughs", label: "Doughs" },
+        { id: "sizes", label: "Sizes" },
+        { id: "locations", label: "Locations" },
+        { id: "units", label: "Units" },
+      ] as const,
     [],
   );
 
@@ -509,17 +791,27 @@ export function LibraryEditor({ data, onChangeData }: LibraryEditorProps) {
       {currentTab === "locations" ? (
         <LocationEditor
           locations={data.locations}
-          onSave={(locations) =>
-            onChangeData((current) => ({ ...current, locations }))
-          }
+          onSave={(locations) => onChangeData((current) => ({ ...current, locations }))}
         />
       ) : currentTab === "units" ? (
         <UnitEditor
           units={data.units}
           onSave={(units) => onChangeData((current) => ({ ...current, units }))}
         />
+      ) : currentTab === "doughs" ? (
+        <DoughEditor
+          data={data}
+          doughs={data.doughs}
+          onSave={(doughs) => onChangeData((current) => ({ ...current, doughs }))}
+        />
+      ) : currentTab === "sizes" ? (
+        <SizeEditor
+          sizes={data.sizes}
+          onSave={(sizes) => onChangeData((current) => ({ ...current, sizes }))}
+        />
       ) : (
         <LibraryItemEditor
+          key={currentTab}
           data={data}
           category={currentTab}
           items={getCollection(data, currentTab)}
