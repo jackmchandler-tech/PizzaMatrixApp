@@ -299,14 +299,6 @@ export default function App() {
   return (
     <AppStateProvider>
       <AppInner />
-    </AppStateProvider>
-  );
-}
-
-export default function App() {
-  return (
-    <AppStateProvider>
-      <AppInner />
       <PwaUpdater />
     </AppStateProvider>
   );
