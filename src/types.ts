@@ -95,6 +95,17 @@ export interface PartyPlan {
   eventName?: string;
   date?: string;
   diners: number;
+  guestNames?: string; // NEW
+  notes?: string;
+  rows: PizzaPlanRow[];
+}
+
+export interface PartyPlan {
+  id: Id;
+  eventName?: string;
+  date?: string;
+  diners: number;
+  guestNames?: string; // NEW
   notes?: string;
   rows: PizzaPlanRow[];
 }
@@ -141,5 +152,6 @@ export interface AppData {
   seasonings: LibraryItem[];
   doughs: DoughRecord[];
   pizzas: PizzaRecipe[];
+  partyHistory: PartyHistoryRecord[]; // NEW
   activeParty: PartyPlan;
 }
