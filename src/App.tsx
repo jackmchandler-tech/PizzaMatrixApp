@@ -72,6 +72,9 @@ function PlannerScreen() {
           <button className="rounded bg-blue-700 px-4 py-2 text-white" onClick={() => window.print()}>
             Print
           </button>
+          <button onClick={savePartyToHistory}>
+            Save Party
+          </button>
         </div>
 
         <PrintView data={data} />
@@ -102,6 +105,19 @@ function PlannerScreen() {
               <button className="rounded bg-slate-800 px-4 py-2 text-white" onClick={() => setShowPrintView(true)}>
                 Print Friendly View
               </button>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 12 }}>
+            <div>
+              <label>Guest Names</label>
+              <textarea
+                value={data.activeParty.guestNames || ""}
+                onChange={(e) =>
+                  updateActiveParty({ guestNames: e.target.value })
+                }
+                rows={2}
+                style={{ width: 300 }}
+              />
             </div>
           </div>
         </header>
@@ -290,6 +306,36 @@ function PlannerScreen() {
     </div>
   );
 }
+
+function savePartyToHistory() {
+  const party = data.activeParty;
+
+  const pizzas = party.rows
+    .filter((r) => r.pizzaId && r.sizeId)
+    .map((r) => {
+      const pizza = data.pizzas.find((p) => p.id === r.pizzaId);
+      const size = data.sizes.find((s) => s.id === r.sizeId);
+
+      return {
+        pizzaName: pizza?.name ?? "",
+        sizeName: size?.name,
+        quantity: r.quantity,
+      };
+    });
+
+  const record = {
+    id: makeId("history"),
+    date: party.date,
+    diners: party.diners,
+    guestNames: party.guestNames,
+    pizzas,
+  };
+
+  updateData({
+    ...data,
+    partyHistory: [...data.partyHistory, record],
+  });
+} // end of savePartyToHistory()
 
 function AppInner() {
   return <PlannerScreen />;
