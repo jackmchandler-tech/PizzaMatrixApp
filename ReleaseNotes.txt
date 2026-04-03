@@ -1,0 +1,6 @@
+1.1.0
+- Added PartyHistoryRecord type to support saved party snapshots
+- Added Party History screen component export
+- Fixed missing PartyHistory type/import wiring errors
+1.0.0
+  -Initial version
