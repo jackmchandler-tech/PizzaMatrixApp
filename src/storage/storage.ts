@@ -3,11 +3,13 @@ import type {
   AmountBySize,
   DoughRecord,
   LibraryItem,
+  PartyHistoryRecord,
   PizzaPlanRow,
   PizzaRecipe,
   RecipeLine,
   SizeRecord,
 } from "../types";
+
 import { initialAppData, makeId } from "../seeds";
 
 const STORAGE_KEY = "pizza-matrix-app-data";
