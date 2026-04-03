@@ -36,6 +36,8 @@ function PlannerScreen() {
     const parsed = Number.parseInt(match[0], 10);
     if (!Number.isFinite(parsed) || parsed < 1) return 1;
 
+    
+
     return parsed;
   }
 
@@ -82,7 +84,61 @@ function PlannerScreen() {
           quantity: r.quantity,
         };
       });
-
+      function clearActiveParty() {
+          const hasContent =
+            Boolean(data.activeParty.date) ||
+            Boolean(data.activeParty.guestNames?.trim()) ||
+            data.activeParty.diners > 0 ||
+            data.activeParty.rows.some(
+              (row) =>
+                Boolean(row.pizzaId) ||
+                Boolean(row.sizeId) ||
+                (row.quantity ?? 1) !== 1 ||
+                Boolean(row.notes?.trim()),
+            );
+        
+          if (hasContent) {
+            const confirmed = window.confirm(
+              "Clear the current party and start a new one?",
+            );
+            if (!confirmed) return;
+          }
+        
+          updateActiveParty({
+            date: "",
+            diners: 0,
+            guestNames: "",
+            notes: "",
+            rows: [
+              {
+                id: `planrow_${Math.random().toString(36).slice(2, 10)}`,
+                quantity: 1,
+              },
+              {
+                id: `planrow_${Math.random().toString(36).slice(2, 10)}`,
+                quantity: 1,
+              },
+              {
+                id: `planrow_${Math.random().toString(36).slice(2, 10)}`,
+                quantity: 1,
+              },
+              {
+                id: `planrow_${Math.random().toString(36).slice(2, 10)}`,
+                quantity: 1,
+              },
+              {
+                id: `planrow_${Math.random().toString(36).slice(2, 10)}`,
+                quantity: 1,
+              },
+              {
+                id: `planrow_${Math.random().toString(36).slice(2, 10)}`,
+                quantity: 1,
+              },
+            ],
+          });
+        
+          setQtyDrafts({});
+      }
     const record = {
       id: `history_${Math.random().toString(36).slice(2, 10)}`,
       date: party.date,
@@ -295,7 +351,14 @@ function PlannerScreen() {
                   >
                     Save Party
                   </button>
-
+                
+                  <button
+                    className="rounded bg-amber-700 px-3 py-1 text-white"
+                    onClick={clearActiveParty}
+                  >
+                    New Party
+                  </button>
+                
                   <button
                     className="rounded border px-3 py-1"
                     onClick={() => setShowDescriptions((current) => !current)}
