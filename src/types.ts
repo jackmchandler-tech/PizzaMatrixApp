@@ -95,8 +95,21 @@ export interface PartyPlan {
   eventName?: string;
   date?: string;
   diners: number;
+  guestNames?: string; // NEW
   notes?: string;
   rows: PizzaPlanRow[];
+}
+
+export interface PartyHistoryRecord {
+  id: Id;
+  date?: string;
+  diners: number;
+  guestNames?: string;
+  pizzas: {
+    pizzaName: string;
+    sizeName?: string;
+    quantity: number;
+  }[];
 }
 
 export interface IngredientPullRow {
@@ -141,5 +154,6 @@ export interface AppData {
   seasonings: LibraryItem[];
   doughs: DoughRecord[];
   pizzas: PizzaRecipe[];
+  partyHistory: PartyHistoryRecord[]; // NEW
   activeParty: PartyPlan;
 }
