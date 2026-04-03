@@ -69,76 +69,73 @@ function PlannerScreen() {
     }));
   }
 
-  function savePartyToHistory() {
-    const party = data.activeParty;
+  function savePartyToHistory() function savePartyToHistory() {
+  const party = data.activeParty;
 
-    const pizzas = party.rows
-      .filter((r) => r.pizzaId && r.sizeId)
-      .map((r) => {
-        const pizza = data.pizzas.find((p) => p.id === r.pizzaId);
-        const size = data.sizes.find((s) => s.id === r.sizeId);
+  const pizzas = party.rows
+    .filter((r) => r.pizzaId && r.sizeId)
+    .map((r) => {
+      const pizza = data.pizzas.find((p) => p.id === r.pizzaId);
+      const size = data.sizes.find((s) => s.id === r.sizeId);
 
-        return {
-          pizzaName: pizza?.name ?? "",
-          sizeName: size?.name,
-          quantity: r.quantity,
-        };
-      });
-      function clearActiveParty() {
-          const hasContent =
-            Boolean(data.activeParty.date) ||
-            Boolean(data.activeParty.guestNames?.trim()) ||
-            data.activeParty.diners > 0 ||
-            data.activeParty.rows.some(
-              (row) =>
-                Boolean(row.pizzaId) ||
-                Boolean(row.sizeId) ||
-                (row.quantity ?? 1) !== 1 ||
-                Boolean(row.notes?.trim()),
-            );
-        
-          if (hasContent) {
-            const confirmed = window.confirm(
-              "Clear the current party and start a new one?",
-            );
-            if (!confirmed) return;
-          }
-        
-          updateActiveParty({
-            date: "",
-            diners: 0,
-            guestNames: "",
-            notes: "",
-            rows: [
-              {
-                id: `planrow_${Math.random().toString(36).slice(2, 10)}`,
-                quantity: 1,
-              },
-              {
-                id: `planrow_${Math.random().toString(36).slice(2, 10)}`,
-                quantity: 1,
-              },
-              {
-                id: `planrow_${Math.random().toString(36).slice(2, 10)}`,
-                quantity: 1,
-              },
-              {
-                id: `planrow_${Math.random().toString(36).slice(2, 10)}`,
-                quantity: 1,
-              },
-              {
-                id: `planrow_${Math.random().toString(36).slice(2, 10)}`,
-                quantity: 1,
-              },
-              {
-                id: `planrow_${Math.random().toString(36).slice(2, 10)}`,
-                quantity: 1,
-              },
-            ],
-          });
-        
-          setQtyDrafts({});
-      }
+      return {
+        pizzaName: pizza?.name ?? "",
+        sizeName: size?.name,
+        quantity: r.quantity,
+      };
+    });
+
+  const record = {
+    id: `history_${Math.random().toString(36).slice(2, 10)}`,
+    date: party.date,
+    diners: party.diners,
+    guestNames: party.guestNames,
+    pizzas,
+  };
+
+  setData((current) => ({
+    ...current,
+    partyHistory: [...current.partyHistory, record],
+  }));
+}
+
+function clearActiveParty() {
+  const hasContent =
+    Boolean(data.activeParty.date) ||
+    Boolean(data.activeParty.guestNames?.trim()) ||
+    data.activeParty.diners > 0 ||
+    data.activeParty.rows.some(
+      (row) =>
+        Boolean(row.pizzaId) ||
+        Boolean(row.sizeId) ||
+        (row.quantity ?? 1) !== 1 ||
+        Boolean(row.notes?.trim()),
+    );
+
+  if (hasContent) {
+    const confirmed = window.confirm(
+      "Clear the current party and start a new one?",
+    );
+    if (!confirmed) return;
+  }
+
+  updateActiveParty({
+    date: "",
+    diners: 0,
+    guestNames: "",
+    notes: "",
+    rows: [
+      { id: `planrow_${Math.random().toString(36).slice(2, 10)}`, quantity: 1 },
+      { id: `planrow_${Math.random().toString(36).slice(2, 10)}`, quantity: 1 },
+      { id: `planrow_${Math.random().toString(36).slice(2, 10)}`, quantity: 1 },
+      { id: `planrow_${Math.random().toString(36).slice(2, 10)}`, quantity: 1 },
+      { id: `planrow_${Math.random().toString(36).slice(2, 10)}`, quantity: 1 },
+      { id: `planrow_${Math.random().toString(36).slice(2, 10)}`, quantity: 1 },
+    ],
+  });
+
+  setQtyDrafts({});
+}
     const record = {
       id: `history_${Math.random().toString(36).slice(2, 10)}`,
       date: party.date,
