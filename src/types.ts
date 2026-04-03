@@ -100,14 +100,16 @@ export interface PartyPlan {
   rows: PizzaPlanRow[];
 }
 
-export interface PartyPlan {
+export interface PartyHistoryRecord {
   id: Id;
-  eventName?: string;
   date?: string;
   diners: number;
-  guestNames?: string; // NEW
-  notes?: string;
-  rows: PizzaPlanRow[];
+  guestNames?: string;
+  pizzas: {
+    pizzaName: string;
+    sizeName?: string;
+    quantity: number;
+  }[];
 }
 
 export interface IngredientPullRow {
