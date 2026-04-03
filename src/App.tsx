@@ -9,6 +9,7 @@ import { PwaUpdater } from "./components/PwaUpdater";
 import { PizzaMenu } from "./components/PizzaMenu";
 import { PartyHistory } from "./components/PartyHistory";
 import type { PizzaRecipe } from "./types";
+import { APP_VERSION } from "./constants";
 
 function PlannerScreen() {
   const {
@@ -160,7 +161,12 @@ function PlannerScreen() {
         <header className="rounded-2xl bg-white p-4 shadow md:p-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <h1 className="text-2xl font-bold">Pizza Matrix</h1>
+              <h1 className="text-2xl font-bold">
+                Pizza Matrix{" "}
+                <span className="text-sm font-normal text-slate-500">
+                  v{APP_VERSION}
+                </span>
+              </h1>
               <p className="text-slate-600">
                 Plan pizzas, track coverage, and manage setup data.
               </p>
