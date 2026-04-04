@@ -1,6 +1,11 @@
 import type { AppData } from "../types";
 
-export function PartyHistory({ data }: { data: AppData }) {
+interface PartyHistoryProps {
+  data: AppData;
+  onLoadParty?: (partyId: string) => void;
+}
+
+export function PartyHistory({ data, onLoadParty }: PartyHistoryProps) {
   return (
     <div style={{ padding: 16 }}>
       <h2>Party History</h2>
@@ -21,12 +26,34 @@ export function PartyHistory({ data }: { data: AppData }) {
                 background: "#fff",
               }}
             >
-              <div><strong>Date:</strong> {party.date || "—"}</div>
-              <div><strong>Diners:</strong> {party.diners}</div>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                <div>
+                  <div><strong>Date:</strong> {party.date || "—"}</div>
+                  <div><strong>Diners:</strong> {party.diners}</div>
+                  {party.guestNames ? (
+                    <div><strong>Guests:</strong> {party.guestNames}</div>
+                  ) : null}
+                </div>
 
-              {party.guestNames ? (
-                <div><strong>Guests:</strong> {party.guestNames}</div>
-              ) : null}
+                {onLoadParty ? (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => onLoadParty(party.id)}
+                      style={{
+                        padding: "8px 12px",
+                        borderRadius: 6,
+                        background: "#1d4ed8",
+                        color: "white",
+                        border: "none",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Load into Planner
+                    </button>
+                  </div>
+                ) : null}
+              </div>
 
               <div style={{ marginTop: 8 }}>
                 <strong>Pizzas Served:</strong>
