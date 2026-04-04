@@ -163,7 +163,7 @@ function PlannerScreen() {
             <div>
               <h1 className="flex items-baseline gap-2 text-2xl font-bold">
                 <span>Pizza Matrix</span>
-                <span className="text-xs font-normal text-slate-400">
+                <span className="text-xs font-normal text-slate-300">
                   v{APP_VERSION}
                 </span>
               </h1>
