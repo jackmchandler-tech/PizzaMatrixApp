@@ -162,7 +162,7 @@ function PlannerScreen() {
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
               <h1 className="flex items-baseline gap-2 text-2xl font-bold">
-                <span>Pizza Matrix</span>
+                <span>Pizza Matrix </span>
                 <span className="text-xs font-normal text-slate-300">
                   v{APP_VERSION}
                 </span>
