@@ -1,3 +1,7 @@
+1.1.1
+- Added New Party (clear planner) button with confirmation
+- Added app version display next to title using APP_VERSION constant
+- Improved visibility and usability of planner controls
 1.1.0
 - Added PartyHistoryRecord type to support saved party snapshots
 - Added Party History screen component export

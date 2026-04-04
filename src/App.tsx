@@ -9,6 +9,7 @@ import { PwaUpdater } from "./components/PwaUpdater";
 import { PizzaMenu } from "./components/PizzaMenu";
 import { PartyHistory } from "./components/PartyHistory";
 import type { PizzaRecipe } from "./types";
+import { APP_VERSION } from "./constants";
 
 function PlannerScreen() {
   const {
@@ -97,6 +98,40 @@ function PlannerScreen() {
     }));
   }
 
+  function clearActiveParty() {
+    const hasContent =
+      Boolean(data.activeParty.date) ||
+      Boolean(data.activeParty.guestNames?.trim()) ||
+      data.activeParty.diners > 0 ||
+      data.activeParty.rows.some(
+        (row) =>
+          Boolean(row.pizzaId) ||
+          Boolean(row.sizeId) ||
+          (row.quantity ?? 1) !== 1 ||
+          Boolean(row.notes?.trim()),
+      );
+
+    if (hasContent) {
+      const confirmed = window.confirm(
+        "Clear the current party and start a new one?",
+      );
+      if (!confirmed) return;
+    }
+
+    updateActiveParty({
+      date: "",
+      diners: 0,
+      guestNames: "",
+      notes: "",
+      rows: Array.from({ length: 6 }).map(() => ({
+        id: `planrow_${Math.random().toString(36).slice(2, 10)}`,
+        quantity: 1,
+      })),
+    });
+
+    setQtyDrafts({});
+  }
+
   if (showPrintView) {
     return (
       <div className="min-h-screen bg-slate-100 p-4">
@@ -126,7 +161,14 @@ function PlannerScreen() {
         <header className="rounded-2xl bg-white p-4 shadow md:p-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <h1 className="text-2xl font-bold">Pizza Matrix</h1>
+              <h1 style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                <span style={{ fontSize: "1.5rem", fontWeight: 700 }}>
+                  Pizza Matrix 
+                </span>
+                <span style={{ fontSize: "0.7rem", color: "#94a3b8", fontWeight: 400 }}>
+                  v{APP_VERSION}
+                </span>
+              </h1>
               <p className="text-slate-600">
                 Plan pizzas, track coverage, and manage setup data.
               </p>
@@ -294,6 +336,13 @@ function PlannerScreen() {
                     onClick={savePartyToHistory}
                   >
                     Save Party
+                  </button>
+
+                  <button
+                    className="rounded bg-amber-700 px-3 py-1 text-white"
+                    onClick={clearActiveParty}
+                  >
+                    New Party
                   </button>
 
                   <button
