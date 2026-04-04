@@ -161,9 +161,11 @@ function PlannerScreen() {
         <header className="rounded-2xl bg-white p-4 shadow md:p-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <h1 className="flex items-baseline gap-2 text-2xl font-bold">
-                <span>Pizza Matrix </span>
-                <span className="text-xs font-normal text-slate-300">
+              <h1 style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                <span style={{ fontSize: "1.5rem", fontWeight: 700 }}>
+                  Pizza Matrix 
+                </span>
+                <span style={{ fontSize: "0.7rem", color: "#94a3b8", fontWeight: 400 }}>
                   v{APP_VERSION}
                 </span>
               </h1>
