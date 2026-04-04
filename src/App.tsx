@@ -97,7 +97,65 @@ function PlannerScreen() {
       partyHistory: [...current.partyHistory, record],
     }));
   }
-
+  function loadPartyFromHistory(partyId: string) {
+    const party = data.partyHistory.find((entry) => entry.id === partyId);
+    if (!party) return;
+  
+    const hasContent =
+      Boolean(data.activeParty.date) ||
+      Boolean(data.activeParty.guestNames?.trim()) ||
+      data.activeParty.diners > 0 ||
+      data.activeParty.rows.some(
+        (row) =>
+          Boolean(row.pizzaId) ||
+          Boolean(row.sizeId) ||
+          (row.quantity ?? 1) !== 1 ||
+          Boolean(row.notes?.trim()),
+      );
+  
+    if (hasContent) {
+      const confirmed = window.confirm(
+        "Replace the current planner with this saved party?",
+      );
+      if (!confirmed) return;
+    }
+  
+    const rows = party.pizzas.map((pizza) => {
+      const matchedPizza = data.pizzas.find((p) => p.name === pizza.pizzaName);
+      const matchedSize = data.sizes.find((s) => s.name === pizza.sizeName);
+  
+      return {
+        id: `planrow_${Math.random().toString(36).slice(2, 10)}`,
+        pizzaId: matchedPizza?.id,
+        sizeId: matchedSize?.id,
+        quantity: pizza.quantity || 1,
+        notes: "",
+      };
+    });
+  
+    const paddedRows =
+      rows.length >= 6
+        ? rows
+        : [
+            ...rows,
+            ...Array.from({ length: 6 - rows.length }).map(() => ({
+              id: `planrow_${Math.random().toString(36).slice(2, 10)}`,
+              quantity: 1,
+            })),
+          ];
+  
+    updateActiveParty({
+      date: party.date ?? "",
+      diners: party.diners ?? 0,
+      guestNames: party.guestNames ?? "",
+      notes: "",
+      rows: paddedRows,
+    });
+  
+    setQtyDrafts({});
+    setCurrentView("planner");
+  } // end of loadPartyFromHistory()
+  
   function clearActiveParty() {
     const hasContent =
       Boolean(data.activeParty.date) ||
@@ -262,7 +320,7 @@ function PlannerScreen() {
         ) : currentView === "menu" ? (
           <PizzaMenu data={data} />
         ) : currentView === "history" ? (
-          <PartyHistory data={data} />
+          <PartyHistory data={data} onLoadParty={loadPartyFromHistory} />
         ) : (
           <>
             <section className="rounded-2xl bg-white p-4 shadow md:p-6">
