@@ -10,6 +10,7 @@ import { PizzaMenu } from "./components/PizzaMenu";
 import { PartyHistory } from "./components/PartyHistory";
 import type { PizzaRecipe } from "./types";
 import { APP_VERSION } from "./constants";
+import { InstructionManual } from "./components/InstructionManual";
 
 function PlannerScreen() {
   const {
@@ -314,9 +315,14 @@ function PlannerScreen() {
           />
         ) : currentView === "librarySetup" ? (
           <div style={{ display: "grid", gap: 16 }}>
-            <BackupManager data={data} onImportData={setData} />
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <BackupManager data={data} onImportData={setData} />
+              <ReleaseNotes />
+              <InstructionManual />
+            </div>
+          
             <LibraryEditor data={data} onChangeData={setData} />
-          </div>
+        </div>
         ) : currentView === "menu" ? (
           <PizzaMenu data={data} />
         ) : currentView === "history" ? (
