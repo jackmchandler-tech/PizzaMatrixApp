@@ -11,7 +11,7 @@ import { PartyHistory } from "./components/PartyHistory";
 import type { PizzaRecipe } from "./types";
 import { APP_VERSION } from "./constants";
 import { InstructionManual } from "./components/InstructionManual";
-import { ReleaseNotes } from "./components/ReleaseNotes";
+//import { ReleaseNotes } from "./components/ReleaseNotes";
 
 function PlannerScreen() {
   const {
