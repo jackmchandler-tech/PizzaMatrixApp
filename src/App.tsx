@@ -319,6 +319,7 @@ function PlannerScreen() {
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <BackupManager data={data} onImportData={setData} />
               <InstructionManual />
+              <ReleaseNotes />
             </div>
           
             <LibraryEditor data={data} onChangeData={setData} />
