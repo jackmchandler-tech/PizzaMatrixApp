@@ -1,18 +1,15 @@
 import type {
   AppData,
+  AmountBySize,
   DoughRecord,
-  Id,
-  LibraryCategory,
   LibraryItem,
-  LocationRecord,
+  PartyHistoryRecord,
   PersonRecord,
   PizzaPlanRow,
   PizzaRecipe,
   RecipeLine,
   SizeRecord,
-  UnitRecord,
-} from "./types";
-
+} from "../types";
 import { initialAppData, makeId } from "../seeds";
 
 const STORAGE_KEY = "pizza-matrix-app-data";
@@ -103,6 +100,38 @@ function normalizeDoughs(doughs: unknown, fallback: DoughRecord[]): DoughRecord[
     .filter((item): item is DoughRecord => Boolean(item));
 }
 
+function normalizePeople(rawPeople: unknown): PersonRecord[] {
+  if (!Array.isArray(rawPeople)) return [];
+
+  return rawPeople
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const r = item as Record<string, unknown>;
+      const name = typeof r.name === "string" ? r.name.trim() : "";
+      if (!name) return null;
+
+      return {
+        id: typeof r.id === "string" ? r.id : makeId("person"),
+        name,
+        associatedName:
+          typeof r.associatedName === "string" && r.associatedName.trim()
+            ? r.associatedName.trim()
+            : undefined,
+        howMet:
+          typeof r.howMet === "string" && r.howMet.trim()
+            ? r.howMet.trim()
+            : undefined,
+        note:
+          typeof r.note === "string" && r.note.trim() ? r.note.trim() : undefined,
+        phone:
+          typeof r.phone === "string" && r.phone.trim()
+            ? r.phone.trim()
+            : undefined,
+      } as PersonRecord;
+    })
+    .filter((item): item is PersonRecord => Boolean(item));
+}
+
 function normalizeSizes(rawSizes: unknown, seedSizes: SizeRecord[]): SizeRecord[] {
   const imported = Array.isArray(rawSizes) ? rawSizes : [];
 
@@ -141,6 +170,10 @@ function normalizeSizes(rawSizes: unknown, seedSizes: SizeRecord[]): SizeRecord[
           typeof r.defaultServings === "number"
             ? r.defaultServings
             : seed?.defaultServings,
+        defaultDoughWeight:
+          typeof r.defaultDoughWeight === "number"
+            ? r.defaultDoughWeight
+            : seed?.defaultDoughWeight,
       } as SizeRecord;
     })
     .filter((item): item is SizeRecord => Boolean(item));
@@ -182,7 +215,6 @@ function normalizePizzas(
   if (!Array.isArray(rawPizzas)) return [];
 
   const fallbackDoughId = doughs[0]?.id;
-
   const result: PizzaRecipe[] = [];
 
   for (const item of rawPizzas) {
@@ -247,38 +279,6 @@ function normalizePlanRows(rawRows: unknown): PizzaPlanRow[] {
     };
   });
 }
-function normalizePeople(rawPeople: unknown): PersonRecord[] {
-  if (!Array.isArray(rawPeople)) return [];
-
-  return rawPeople
-    .map((item) => {
-      if (!item || typeof item !== "object") return null;
-      const r = item as Record<string, unknown>;
-
-      const name = typeof r.name === "string" ? r.name.trim() : "";
-      if (!name) return null;
-
-      return {
-        id: typeof r.id === "string" ? r.id : makeId("person"),
-        name,
-        associatedName:
-          typeof r.associatedName === "string" && r.associatedName.trim()
-            ? r.associatedName.trim()
-            : undefined,
-        howMet:
-          typeof r.howMet === "string" && r.howMet.trim()
-            ? r.howMet.trim()
-            : undefined,
-        note:
-          typeof r.note === "string" && r.note.trim() ? r.note.trim() : undefined,
-        phone:
-          typeof r.phone === "string" && r.phone.trim()
-            ? r.phone.trim()
-            : undefined,
-      } as PersonRecord;
-    })
-    .filter((item): item is PersonRecord => Boolean(item));
-}
 
 function normalizePartyHistory(rawHistory: unknown): PartyHistoryRecord[] {
   if (!Array.isArray(rawHistory)) return [];
@@ -316,74 +316,97 @@ function normalizePartyHistory(rawHistory: unknown): PartyHistoryRecord[] {
     .filter((item): item is PartyHistoryRecord => Boolean(item));
 }
 
-const normalized: AppData = {
-  version: typeof source.version === "number" ? source.version : seed.version,
-  locations: Array.isArray(source.locations)
-    ? (source.locations as AppData["locations"])
-    : seed.locations,
-  units: Array.isArray(source.units)
-    ? (source.units as AppData["units"])
-    : seed.units,
-  sizes,
-  sauces: normalizeLibraryItems(source.sauces, "sauces"),
-  cheeses: normalizeLibraryItems(source.cheeses, "cheeses"),
-  toppings: normalizeLibraryItems(source.toppings, "toppings"),
-  seasonings: normalizeLibraryItems(source.seasonings, "seasonings"),
-  doughs,
-  people: normalizePeople(source.people),
-  pizzas: normalizePizzas(source.pizzas, sizes, doughs),
-  partyHistory: normalizePartyHistory(source.partyHistory),
-  activeParty: {
-    id:
-      source.activeParty &&
-      typeof source.activeParty === "object" &&
-      typeof (source.activeParty as Record<string, unknown>).id === "string"
-        ? ((source.activeParty as Record<string, unknown>).id as string)
-        : seed.activeParty.id,
-    eventName:
-      source.activeParty &&
-      typeof source.activeParty === "object" &&
-      typeof (source.activeParty as Record<string, unknown>).eventName === "string"
-        ? ((source.activeParty as Record<string, unknown>).eventName as string)
-        : undefined,
-    date:
-      source.activeParty &&
-      typeof source.activeParty === "object" &&
-      typeof (source.activeParty as Record<string, unknown>).date === "string"
-        ? ((source.activeParty as Record<string, unknown>).date as string)
-        : undefined,
-    diners:
-      source.activeParty &&
-      typeof source.activeParty === "object" &&
-      typeof (source.activeParty as Record<string, unknown>).diners === "number"
-        ? ((source.activeParty as Record<string, unknown>).diners as number)
-        : 0,
-    guestNames:
-      source.activeParty &&
-      typeof source.activeParty === "object" &&
-      typeof (source.activeParty as Record<string, unknown>).guestNames === "string"
-        ? ((source.activeParty as Record<string, unknown>).guestNames as string)
-        : "",
-    selectedGuestIds:
-      source.activeParty &&
-      typeof source.activeParty === "object" &&
-      Array.isArray((source.activeParty as Record<string, unknown>).selectedGuestIds)
-        ? ((source.activeParty as Record<string, unknown>).selectedGuestIds as unknown[]).filter(
-            (id): id is string => typeof id === "string",
-          )
-        : [],
-    notes:
-      source.activeParty &&
-      typeof source.activeParty === "object" &&
-      typeof (source.activeParty as Record<string, unknown>).notes === "string"
-        ? ((source.activeParty as Record<string, unknown>).notes as string)
-        : undefined,
-    rows:
-      source.activeParty && typeof source.activeParty === "object"
-        ? normalizePlanRows((source.activeParty as Record<string, unknown>).rows)
-        : seed.activeParty.rows,
-  },
-};
+export function normalizeAppData(raw: unknown): AppData {
+  const seed = cloneInitialData();
+  const source =
+    raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+
+  const sizes = normalizeSizes(source.sizes, seed.sizes);
+  const doughs = normalizeDoughs(source.doughs, seed.doughs);
+
+  const normalized: AppData = {
+    version: typeof source.version === "number" ? source.version : seed.version,
+    locations: Array.isArray(source.locations)
+      ? (source.locations as AppData["locations"])
+      : seed.locations,
+    units: Array.isArray(source.units)
+      ? (source.units as AppData["units"])
+      : seed.units,
+    sizes,
+    sauces: normalizeLibraryItems(source.sauces, "sauces"),
+    cheeses: normalizeLibraryItems(source.cheeses, "cheeses"),
+    toppings: normalizeLibraryItems(source.toppings, "toppings"),
+    seasonings: normalizeLibraryItems(source.seasonings, "seasonings"),
+    doughs,
+    people: normalizePeople(source.people),
+    pizzas: normalizePizzas(source.pizzas, sizes, doughs),
+    partyHistory: normalizePartyHistory(source.partyHistory),
+    activeParty: {
+      id:
+        source.activeParty &&
+        typeof source.activeParty === "object" &&
+        typeof (source.activeParty as Record<string, unknown>).id === "string"
+          ? ((source.activeParty as Record<string, unknown>).id as string)
+          : seed.activeParty.id,
+      eventName:
+        source.activeParty &&
+        typeof source.activeParty === "object" &&
+        typeof (source.activeParty as Record<string, unknown>).eventName === "string"
+          ? ((source.activeParty as Record<string, unknown>).eventName as string)
+          : undefined,
+      date:
+        source.activeParty &&
+        typeof source.activeParty === "object" &&
+        typeof (source.activeParty as Record<string, unknown>).date === "string"
+          ? ((source.activeParty as Record<string, unknown>).date as string)
+          : undefined,
+      diners:
+        source.activeParty &&
+        typeof source.activeParty === "object" &&
+        typeof (source.activeParty as Record<string, unknown>).diners === "number"
+          ? ((source.activeParty as Record<string, unknown>).diners as number)
+          : 0,
+      guestNames:
+        source.activeParty &&
+        typeof source.activeParty === "object" &&
+        typeof (source.activeParty as Record<string, unknown>).guestNames === "string"
+          ? ((source.activeParty as Record<string, unknown>).guestNames as string)
+          : "",
+      selectedGuestIds:
+        source.activeParty &&
+        typeof source.activeParty === "object" &&
+        Array.isArray(
+          (source.activeParty as Record<string, unknown>).selectedGuestIds,
+        )
+          ? (
+              (source.activeParty as Record<string, unknown>)
+                .selectedGuestIds as unknown[]
+            ).filter((id): id is string => typeof id === "string")
+          : [],
+      notes:
+        source.activeParty &&
+        typeof source.activeParty === "object" &&
+        typeof (source.activeParty as Record<string, unknown>).notes === "string"
+          ? ((source.activeParty as Record<string, unknown>).notes as string)
+          : undefined,
+      rows:
+        source.activeParty && typeof source.activeParty === "object"
+          ? normalizePlanRows((source.activeParty as Record<string, unknown>).rows)
+          : seed.activeParty.rows,
+    },
+  };
+
+  if (normalized.sauces.length === 0) normalized.sauces = seed.sauces;
+  if (normalized.cheeses.length === 0) normalized.cheeses = seed.cheeses;
+  if (normalized.toppings.length === 0) normalized.toppings = seed.toppings;
+  if (normalized.seasonings.length === 0) normalized.seasonings = seed.seasonings;
+  if (normalized.doughs.length === 0) normalized.doughs = seed.doughs;
+  if (normalized.activeParty.rows.length === 0) {
+    normalized.activeParty.rows = seed.activeParty.rows;
+  }
+
+  return normalized;
+}
 
 export const storageAdapter = {
   async load(): Promise<AppData> {
