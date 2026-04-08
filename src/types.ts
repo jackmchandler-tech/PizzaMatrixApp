@@ -9,6 +9,14 @@ export interface LocationRecord {
   sortOrder: number;
   isBuiltIn?: boolean;
 }
+export interface PersonRecord {
+  id: Id;
+  name: string;
+  associatedName?: string;
+  howMet?: string;
+  note?: string;
+  phone?: string;
+}
 
 export interface UnitRecord {
   id: Id;
@@ -98,6 +106,7 @@ export interface PartyPlan {
   guestNames?: string; // NEW
   notes?: string;
   rows: PizzaPlanRow[];
+  selectedGuestIds?: Id[];
 }
 
 export interface PartyHistoryRecord {
@@ -109,6 +118,7 @@ export interface PartyHistoryRecord {
     pizzaName: string;
     sizeName?: string;
     quantity: number;
+    selectedGuestIds?: Id[];
   }[];
 }
 
@@ -155,5 +165,6 @@ export interface AppData {
   doughs: DoughRecord[];
   pizzas: PizzaRecipe[];
   partyHistory: PartyHistoryRecord[]; // NEW
+  people: PersonRecord[];
   activeParty: PartyPlan;
 }
