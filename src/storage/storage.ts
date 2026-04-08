@@ -1,14 +1,17 @@
 import type {
   AppData,
-  AmountBySize,
   DoughRecord,
+  Id,
+  LibraryCategory,
   LibraryItem,
-  PartyHistoryRecord,
+  LocationRecord,
+  PersonRecord,
   PizzaPlanRow,
   PizzaRecipe,
   RecipeLine,
   SizeRecord,
-} from "../types";
+  UnitRecord,
+} from "./types";
 
 import { initialAppData, makeId } from "../seeds";
 
@@ -243,6 +246,74 @@ function normalizePlanRows(rawRows: unknown): PizzaPlanRow[] {
         typeof r.notes === "string" && r.notes.trim() ? r.notes.trim() : undefined,
     };
   });
+}
+function normalizePeople(rawPeople: unknown): PersonRecord[] {
+  if (!Array.isArray(rawPeople)) return [];
+
+  return rawPeople
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const r = item as Record<string, unknown>;
+
+      const name = typeof r.name === "string" ? r.name.trim() : "";
+      if (!name) return null;
+
+      return {
+        id: typeof r.id === "string" ? r.id : makeId("person"),
+        name,
+        associatedName:
+          typeof r.associatedName === "string" && r.associatedName.trim()
+            ? r.associatedName.trim()
+            : undefined,
+        howMet:
+          typeof r.howMet === "string" && r.howMet.trim()
+            ? r.howMet.trim()
+            : undefined,
+        note:
+          typeof r.note === "string" && r.note.trim() ? r.note.trim() : undefined,
+        phone:
+          typeof r.phone === "string" && r.phone.trim()
+            ? r.phone.trim()
+            : undefined,
+      } as PersonRecord;
+    })
+    .filter((item): item is PersonRecord => Boolean(item));
+}
+
+function normalizePartyHistory(rawHistory: unknown): PartyHistoryRecord[] {
+  if (!Array.isArray(rawHistory)) return [];
+
+  return rawHistory
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const r = item as Record<string, unknown>;
+
+      return {
+        id: typeof r.id === "string" ? r.id : makeId("history"),
+        date: typeof r.date === "string" ? r.date : undefined,
+        diners: typeof r.diners === "number" ? r.diners : 0,
+        guestNames: typeof r.guestNames === "string" ? r.guestNames : undefined,
+        selectedGuestIds: Array.isArray(r.selectedGuestIds)
+          ? r.selectedGuestIds.filter((id): id is string => typeof id === "string")
+          : [],
+        pizzas: Array.isArray(r.pizzas)
+          ? r.pizzas.map((pizza) => {
+              const p = (pizza && typeof pizza === "object"
+                ? pizza
+                : {}) as Record<string, unknown>;
+              return {
+                pizzaName: typeof p.pizzaName === "string" ? p.pizzaName : "",
+                sizeName: typeof p.sizeName === "string" ? p.sizeName : undefined,
+                quantity:
+                  typeof p.quantity === "number" && p.quantity > 0
+                    ? p.quantity
+                    : 1,
+              };
+            })
+          : [],
+      } as PartyHistoryRecord;
+    })
+    .filter((item): item is PartyHistoryRecord => Boolean(item));
 }
 
 export function normalizeAppData(raw: unknown): AppData {
