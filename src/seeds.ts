@@ -15,6 +15,7 @@ import type {
 export function makeId(prefix = "id"): Id {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
 }
+export const seededPeople: PersonRecord[] = [];
 
 export const seededLocations: LocationRecord[] = [
   { id: "loc_freezer", name: "Freezer", sortOrder: 1, isBuiltIn: true },
@@ -325,20 +326,22 @@ export const initialAppData: AppData = {
       "unit_to_taste",
     ),
   ],
-  doughs: seededDoughs,
-  pizzas: [diavolaPizza, greekPizza],
-  partyHistory: [],
-  activeParty: {
-    id: makeId("party"),
-    diners: 0,
-    guestNames: "",
-    rows: [
-      blankPlanRow(),
-      blankPlanRow(),
-      blankPlanRow(),
-      blankPlanRow(),
-      blankPlanRow(),
-      blankPlanRow(),
-    ],
+    doughs: seededDoughs,
+    people: seededPeople,
+    pizzas: [diavolaPizza, greekPizza],
+    partyHistory: [],
+    activeParty: {
+      id: makeId("party"),
+      diners: 0,
+      guestNames: "",
+      selectedGuestIds: [],
+      rows: [
+        blankPlanRow(),
+        blankPlanRow(),
+        blankPlanRow(),
+        blankPlanRow(),
+        blankPlanRow(),
+        blankPlanRow(),
+      ],
   },
 };
