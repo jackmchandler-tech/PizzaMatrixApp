@@ -8,10 +8,9 @@ import { BackupManager } from "./components/BackupManager";
 import { PwaUpdater } from "./components/PwaUpdater";
 import { PizzaMenu } from "./components/PizzaMenu";
 import { PartyHistory } from "./components/PartyHistory";
-import type { PizzaRecipe } from "./types";
+import { PeopleEditor } from "./components/PeopleEditor";
 import { APP_VERSION } from "./constants";
-import { InstructionManual } from "./components/InstructionManual";
-import { ReleaseNotes } from "./components/ReleaseNotes";
+import type { PizzaRecipe } from "./types";
 
 function PlannerScreen() {
   const {
@@ -91,6 +90,7 @@ function PlannerScreen() {
       date: party.date,
       diners: party.diners,
       guestNames: party.guestNames,
+      selectedGuestIds: party.selectedGuestIds ?? [],
       pizzas,
     };
 
@@ -99,69 +99,12 @@ function PlannerScreen() {
       partyHistory: [...current.partyHistory, record],
     }));
   }
-  function loadPartyFromHistory(partyId: string) {
-    const party = data.partyHistory.find((entry) => entry.id === partyId);
-    if (!party) return;
-  
-    const hasContent =
-      Boolean(data.activeParty.date) ||
-      Boolean(data.activeParty.guestNames?.trim()) ||
-      data.activeParty.diners > 0 ||
-      data.activeParty.rows.some(
-        (row) =>
-          Boolean(row.pizzaId) ||
-          Boolean(row.sizeId) ||
-          (row.quantity ?? 1) !== 1 ||
-          Boolean(row.notes?.trim()),
-      );
-  
-    if (hasContent) {
-      const confirmed = window.confirm(
-        "Replace the current planner with this saved party?",
-      );
-      if (!confirmed) return;
-    }
-  
-    const rows = party.pizzas.map((pizza) => {
-      const matchedPizza = data.pizzas.find((p) => p.name === pizza.pizzaName);
-      const matchedSize = data.sizes.find((s) => s.name === pizza.sizeName);
-  
-      return {
-        id: `planrow_${Math.random().toString(36).slice(2, 10)}`,
-        pizzaId: matchedPizza?.id,
-        sizeId: matchedSize?.id,
-        quantity: pizza.quantity || 1,
-        notes: "",
-      };
-    });
-  
-    const paddedRows =
-      rows.length >= 6
-        ? rows
-        : [
-            ...rows,
-            ...Array.from({ length: 6 - rows.length }).map(() => ({
-              id: `planrow_${Math.random().toString(36).slice(2, 10)}`,
-              quantity: 1,
-            })),
-          ];
-  
-    updateActiveParty({
-      date: party.date ?? "",
-      diners: party.diners ?? 0,
-      guestNames: party.guestNames ?? "",
-      notes: "",
-      rows: paddedRows,
-    });
-  
-    setQtyDrafts({});
-    setCurrentView("planner");
-  } // end of loadPartyFromHistory()
-  
+
   function clearActiveParty() {
     const hasContent =
       Boolean(data.activeParty.date) ||
       Boolean(data.activeParty.guestNames?.trim()) ||
+      (data.activeParty.selectedGuestIds?.length ?? 0) > 0 ||
       data.activeParty.diners > 0 ||
       data.activeParty.rows.some(
         (row) =>
@@ -182,6 +125,7 @@ function PlannerScreen() {
       date: "",
       diners: 0,
       guestNames: "",
+      selectedGuestIds: [],
       notes: "",
       rows: Array.from({ length: 6 }).map(() => ({
         id: `planrow_${Math.random().toString(36).slice(2, 10)}`,
@@ -190,6 +134,78 @@ function PlannerScreen() {
     });
 
     setQtyDrafts({});
+  }
+
+  function toggleSelectedGuest(personId: string) {
+    const current = data.activeParty.selectedGuestIds ?? [];
+    const next = current.includes(personId)
+      ? current.filter((id) => id !== personId)
+      : [...current, personId];
+
+    updateActiveParty({
+      selectedGuestIds: next,
+    });
+  }
+
+  function loadPartyFromHistory(partyId: string) {
+    const party = data.partyHistory.find((entry) => entry.id === partyId);
+    if (!party) return;
+
+    const hasContent =
+      Boolean(data.activeParty.date) ||
+      Boolean(data.activeParty.guestNames?.trim()) ||
+      (data.activeParty.selectedGuestIds?.length ?? 0) > 0 ||
+      data.activeParty.diners > 0 ||
+      data.activeParty.rows.some(
+        (row) =>
+          Boolean(row.pizzaId) ||
+          Boolean(row.sizeId) ||
+          (row.quantity ?? 1) !== 1 ||
+          Boolean(row.notes?.trim()),
+      );
+
+    if (hasContent) {
+      const confirmed = window.confirm(
+        "Replace the current planner with this saved party?",
+      );
+      if (!confirmed) return;
+    }
+
+    const rows = party.pizzas.map((pizza) => {
+      const matchedPizza = data.pizzas.find((p) => p.name === pizza.pizzaName);
+      const matchedSize = data.sizes.find((s) => s.name === pizza.sizeName);
+
+      return {
+        id: `planrow_${Math.random().toString(36).slice(2, 10)}`,
+        pizzaId: matchedPizza?.id,
+        sizeId: matchedSize?.id,
+        quantity: pizza.quantity || 1,
+        notes: "",
+      };
+    });
+
+    const paddedRows =
+      rows.length >= 6
+        ? rows
+        : [
+            ...rows,
+            ...Array.from({ length: 6 - rows.length }).map(() => ({
+              id: `planrow_${Math.random().toString(36).slice(2, 10)}`,
+              quantity: 1,
+            })),
+          ];
+
+    updateActiveParty({
+      date: party.date ?? "",
+      diners: party.diners ?? 0,
+      guestNames: party.guestNames ?? "",
+      selectedGuestIds: party.selectedGuestIds ?? [],
+      notes: "",
+      rows: paddedRows,
+    });
+
+    setQtyDrafts({});
+    setCurrentView("planner");
   }
 
   if (showPrintView) {
@@ -223,9 +239,15 @@ function PlannerScreen() {
             <div>
               <h1 style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
                 <span style={{ fontSize: "1.5rem", fontWeight: 700 }}>
-                  Pizza Matrix 
+                  Pizza Matrix
                 </span>
-                <span style={{ fontSize: "0.7rem", color: "#94a3b8", fontWeight: 400 }}>
+                <span
+                  style={{
+                    fontSize: "0.7rem",
+                    color: "#94a3b8",
+                    fontWeight: 400,
+                  }}
+                >
                   v{APP_VERSION}
                 </span>
               </h1>
@@ -293,7 +315,13 @@ function PlannerScreen() {
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
+          <div
+            style={{
+              display: "grid",
+              gap: 12,
+              marginTop: 16,
+            }}
+          >
             <div>
               <label>Guest Names</label>
               <textarea
@@ -304,6 +332,49 @@ function PlannerScreen() {
                 rows={2}
                 style={{ width: 300 }}
               />
+            </div>
+
+            <div>
+              <div style={{ marginBottom: 6, fontWeight: 600 }}>
+                Select Guests from Person Library
+              </div>
+
+              {data.people.length === 0 ? (
+                <div style={{ color: "#64748b" }}>
+                  No saved people yet. Add them in Library Setup.
+                </div>
+              ) : (
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 8,
+                  }}
+                >
+                  {data.people.map((person) => {
+                    const selected = (data.activeParty.selectedGuestIds ?? []).includes(
+                      person.id,
+                    );
+
+                    return (
+                      <button
+                        key={person.id}
+                        type="button"
+                        onClick={() => toggleSelectedGuest(person.id)}
+                        style={{
+                          padding: "6px 10px",
+                          borderRadius: 999,
+                          border: "1px solid #ccc",
+                          background: selected ? "#dbeafe" : "#fff",
+                          fontWeight: selected ? 700 : 400,
+                        }}
+                      >
+                        {person.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </header>
@@ -316,14 +387,10 @@ function PlannerScreen() {
           />
         ) : currentView === "librarySetup" ? (
           <div style={{ display: "grid", gap: 16 }}>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <BackupManager data={data} onImportData={setData} />
-              <InstructionManual />
-              <ReleaseNotes />
-            </div>
-          
+            <BackupManager data={data} onImportData={setData} />
+            <PeopleEditor data={data} onChangeData={setData} />
             <LibraryEditor data={data} onChangeData={setData} />
-        </div>
+          </div>
         ) : currentView === "menu" ? (
           <PizzaMenu data={data} />
         ) : currentView === "history" ? (
