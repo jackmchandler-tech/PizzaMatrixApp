@@ -114,11 +114,11 @@ export interface PartyHistoryRecord {
   date?: string;
   diners: number;
   guestNames?: string;
+  selectedGuestIds?: Id[];
   pizzas: {
     pizzaName: string;
     sizeName?: string;
     quantity: number;
-    selectedGuestIds?: Id[];
   }[];
 }
 
