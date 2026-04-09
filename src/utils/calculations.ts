@@ -259,7 +259,11 @@ export function buildCoverageSummary(data: AppData): CoverageSummary {
     return sum + resolveServingsForSize(pizza, row.sizeId, data.sizes) * row.quantity;
   }, 0);
 
-  const diners = data.activeParty.diners || 0;
+  const diners = Math.max(
+    data.activeParty.diners || 0,
+    data.activeParty.selectedGuestIds?.length ?? 0,
+  );
+  
   const delta = plannedServings - diners;
 
   return {
