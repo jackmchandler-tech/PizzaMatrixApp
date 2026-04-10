@@ -8,6 +8,8 @@ import { BackupManager } from "./components/BackupManager";
 import { PwaUpdater } from "./components/PwaUpdater";
 import { PizzaMenu } from "./components/PizzaMenu";
 import { PartyHistory } from "./components/PartyHistory";
+import { InstructionManual } from "./components/InstructionManual";
+import { ReleaseNotes } from "./components/ReleaseNotes";
 import { PeopleEditor } from "./components/PeopleEditor";
 import { APP_VERSION } from "./constants";
 import type { PizzaRecipe } from "./types";
@@ -396,7 +398,12 @@ function PlannerScreen() {
           />
         ) : currentView === "librarySetup" ? (
           <div style={{ display: "grid", gap: 16 }}>
-            <BackupManager data={data} onImportData={setData} />
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <BackupManager data={data} onImportData={setData} />
+              <InstructionManual />
+              <ReleaseNotes />
+            </div>
+          
             <PeopleEditor data={data} onChangeData={setData} />
             <LibraryEditor data={data} onChangeData={setData} />
           </div>
