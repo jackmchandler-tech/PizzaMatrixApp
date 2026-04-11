@@ -8,6 +8,8 @@ import { BackupManager } from "./components/BackupManager";
 import { PwaUpdater } from "./components/PwaUpdater";
 import { PizzaMenu } from "./components/PizzaMenu";
 import { PartyHistory } from "./components/PartyHistory";
+import { InstructionManual } from "./components/InstructionManual";
+import { ReleaseNotes } from "./components/ReleaseNotes";
 import { PeopleEditor } from "./components/PeopleEditor";
 import { APP_VERSION } from "./constants";
 import type { PizzaRecipe } from "./types";
@@ -135,15 +137,24 @@ function PlannerScreen() {
 
     setQtyDrafts({});
   }
+  const selectedGuestCount = data.activeParty.selectedGuestIds?.length ?? 0;
 
+  const hasFreeTextGuests = Boolean(data.activeParty.guestNames?.trim());
+  
+  const displayedDinerCount =
+    Math.max(data.activeParty.diners || 0, selectedGuestCount);
+  
+  const dinerCountIsUncertain = hasFreeTextGuests;
+  
   function toggleSelectedGuest(personId: string) {
     const current = data.activeParty.selectedGuestIds ?? [];
     const next = current.includes(personId)
       ? current.filter((id) => id !== personId)
       : [...current, personId];
-
+  
     updateActiveParty({
       selectedGuestIds: next,
+      diners: Math.max(data.activeParty.diners || 0, next.length),
     });
   }
 
@@ -387,7 +398,12 @@ function PlannerScreen() {
           />
         ) : currentView === "librarySetup" ? (
           <div style={{ display: "grid", gap: 16 }}>
-            <BackupManager data={data} onImportData={setData} />
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <BackupManager data={data} onImportData={setData} />
+              <InstructionManual />
+              <ReleaseNotes />
+            </div>
+          
             <PeopleEditor data={data} onChangeData={setData} />
             <LibraryEditor data={data} onChangeData={setData} />
           </div>
@@ -415,12 +431,12 @@ function PlannerScreen() {
 
                 <label className="block">
                   <span className="text-sm font-medium text-slate-700">
-                    Diners
+                    Diners {dinerCountIsUncertain ? "?" : ""}
                   </span>
                   <input
                     type="number"
                     min={0}
-                    value={data.activeParty.diners}
+                    value={displayedDinerCount}
                     onChange={(e) =>
                       updateActiveParty({
                         diners: Number(e.target.value) || 0,
@@ -428,7 +444,12 @@ function PlannerScreen() {
                     }
                     className="mt-1 w-full rounded border px-3 py-2"
                   />
-                </label>
+                  {dinerCountIsUncertain ? (
+                    <div className="mt-1 text-xs text-amber-700">
+                      Free-text guest names are present, so this count may be incomplete.
+                    </div>
+                  ) : null}
+              </label>
 
                 <div className="rounded border p-3">
                   <div className="text-sm text-slate-500">
