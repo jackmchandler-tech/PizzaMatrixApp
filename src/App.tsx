@@ -13,6 +13,7 @@ import { ReleaseNotes } from "./components/ReleaseNotes";
 import { PeopleEditor } from "./components/PeopleEditor";
 import { APP_VERSION } from "./constants";
 import type { PizzaRecipe } from "./types";
+import { CollapsibleSection } from "./components/CollapsibleSection";
 
 function PlannerScreen() {
   const {
@@ -398,14 +399,33 @@ function PlannerScreen() {
           />
         ) : currentView === "librarySetup" ? (
           <div style={{ display: "grid", gap: 16 }}>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <BackupManager data={data} onImportData={setData} />
-              <InstructionManual />
-              <ReleaseNotes />
-            </div>
-          
-            <PeopleEditor data={data} onChangeData={setData} />
-            <LibraryEditor data={data} onChangeData={setData} />
+            <CollapsibleSection
+              title="Tools"
+              storageKey="pizza-matrix-library-tools"
+              defaultOpen={true}
+            >
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <BackupManager data={data} onImportData={setData} />
+                <InstructionManual />
+                <ReleaseNotes />
+              </div>
+            </CollapsibleSection>
+        
+            <CollapsibleSection
+              title={`People (${data.people.length})`}
+              storageKey="pizza-matrix-library-people"
+              defaultOpen={false}
+            >
+              <PeopleEditor data={data} onChangeData={setData} />
+            </CollapsibleSection>
+        
+            <CollapsibleSection
+              title="Ingredient, Dough, Size, Unit, and Location Setup"
+              storageKey="pizza-matrix-library-main"
+              defaultOpen={true}
+            >
+              <LibraryEditor data={data} onChangeData={setData} />
+            </CollapsibleSection>
           </div>
         ) : currentView === "menu" ? (
           <PizzaMenu data={data} />
